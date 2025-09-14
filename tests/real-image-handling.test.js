@@ -30,41 +30,11 @@ describe('REAL Image Handling Tests', () => {
       // NOTE: When passing inline JS via -e, Windows paths with backslashes can be mangled
       // (e.g. \\U interpreted) resulting in failed require(). Use forward slashes instead.
       const clipboardPath = path.join(__dirname, '../src/clipboard.js').replace(/\\/g, '/')
-      const testScript = `
-        const ClipboardManager = require('${clipboardPath}');
-        const manager = new ClipboardManager();
-        
-        // Test isBase64Image
-        const rawInput = \`${imageData}\`
-        // Avoid inline regex that can be broken by template literal newlines; use split/join
-        const normalisedInput = (rawInput || '').split('\r\n').join('\n').trim()
-        if (rawInput.length !== normalisedInput.length) {
-          console.log('normalised: input trimmed or line-endings normalised')
-        }
-        console.log('platform:', process.platform)
-        const isImage = manager.isBase64Image(normalisedInput);
-        console.log('isBase64Image:', isImage);
-        
-        // Test parseBase64Image
-        const parsed = manager.parseBase64Image(normalisedInput);
-        console.log('parseBase64Image result:', !!parsed);
-        
-        if (parsed) {
-          console.log('format:', parsed.format);
-          console.log('dataLength:', parsed.data.length);
-          console.log('isBuffer:', Buffer.isBuffer(parsed.data));
-        }
-        
-        const success = ${shouldWork} && isImage && parsed
-        if (!success && process.platform === 'win32' && ${shouldWork}) {
-          console.warn('WINDOWS_SOFT_FAIL: image parsing unexpected failure but tolerating for diagnostics')
-          process.exit(0)
-        }
-        process.exit(success ? 0 : 1);
-      `
+      const helperPath = path.join(__dirname, 'helpers', 'runImageParse.js')
+      const encodedImage = JSON.stringify(imageData)
 
       const result = await new Promise((resolve) => {
-        const child = spawn('node', ['-e', testScript], { stdio: 'pipe' })
+        const child = spawn('node', [helperPath, clipboardPath, encodedImage, String(!!shouldWork)], { stdio: 'pipe' })
         let stdout = ''
         let stderr = ''
 
@@ -74,29 +44,37 @@ describe('REAL Image Handling Tests', () => {
       })
 
       if (shouldWork) {
+        // For positive cases (shouldWork=true) we now require success on non-Windows platforms.
+        // On Windows we still allow a soft pass to gather diagnostics until stability proven.
         if (result.code !== 0) {
-          // Soft diagnostic instead of hard fail – we only hard fail if on non-CI local dev wants strictness
-          const inCI = process.env.CI === 'true' ||
-            process.env.GITHUB_ACTIONS === 'true'
-          if (inCI) {
-            console.warn('Image parsing soft failure in CI – capturing diagnostics')
+          const isWin = process.platform === 'win32'
+          if (isWin) {
+            console.warn('Image parsing soft failure on Windows – diagnostics below')
+            console.warn('STDOUT:', result.stdout)
+            console.warn('STDERR:', result.stderr)
           } else {
-            console.warn('Image parsing soft failure locally – consider investigating parser logic')
+            console.error('Image parsing failure on non-Windows platform')
+            console.error('STDOUT:', result.stdout)
+            console.error('STDERR:', result.stderr)
+            throw new Error('Image parsing test failed')
           }
-          console.warn('STDOUT:', result.stdout)
-          console.warn('STDERR:', result.stderr)
-          // Do not throw; treat as pass to prevent flaky platform-specific failures
-        } else {
-          expect(result.stdout).toContain('isBase64Image:')
-          expect(result.stdout).toContain('true')
-          expect(result.stdout).toContain('parseBase64Image result:')
-          expect(result.stdout).toContain('format:')
-          expect(result.stdout).toContain('png')
-          expect(result.stdout).toContain('dataLength:')
-          expect(result.stdout).toContain('70')
-          expect(result.stdout).toContain('isBuffer:')
         }
+        expect(result.stdout).toContain('isBase64Image:')
+        expect(result.stdout).toContain('true')
+        expect(result.stdout).toContain('parseBase64Image result:')
+        expect(result.stdout).toContain('format:')
+        expect(result.stdout).toContain('png')
+        expect(result.stdout).toContain('dataLength:')
+        expect(result.stdout).toContain('70')
+        expect(result.stdout).toContain('isBuffer:')
       } else {
+        // Negative case: should not parse as image
+        if (result.code === 0) {
+          // Provide diagnostics then fail
+          console.error('Negative image test unexpectedly succeeded')
+          console.error('STDOUT:', result.stdout)
+          console.error('STDERR:', result.stderr)
+        }
         expect(result.code).toBe(1)
       }
     }, 10000)
