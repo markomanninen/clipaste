@@ -106,9 +106,10 @@ describe('Smoke Tests - Basic Functionality', () => {
       ]
 
       for (const modulePath of modules) {
+        const resolved = path.join(__dirname, modulePath).replace(/\\/g, '/')
         const testScript = `
           try {
-            require('${path.join(__dirname, modulePath)}');
+            require('${resolved}');
             console.log('SUCCESS');
           } catch (error) {
             console.error('ERROR:', error.message);

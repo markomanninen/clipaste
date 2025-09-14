@@ -36,7 +36,8 @@ describe('REAL Image Handling Tests', () => {
         
         // Test isBase64Image
         const rawInput = \`${imageData}\`
-        const normalisedInput = (rawInput || '').replace(/\r\n/g, '\n').trim()
+        // Avoid inline regex that can be broken by template literal newlines; use split/join
+        const normalisedInput = (rawInput || '').split('\r\n').join('\n').trim()
         if (rawInput.length !== normalisedInput.length) {
           console.log('normalised: input trimmed or line-endings normalised')
         }

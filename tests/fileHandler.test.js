@@ -71,7 +71,9 @@ describe('FileHandler', () => {
 
       await fileHandler.saveText(content, options)
 
-      expect(fs.mkdir).toHaveBeenCalledWith('/new/directory', { recursive: true })
+      // Cross-platform: path.join will produce \\ on Windows; normalize expectation
+      const expectedDir = process.platform === 'win32' ? '\\new\\directory' : '/new/directory'
+      expect(fs.mkdir).toHaveBeenCalledWith(expectedDir, { recursive: true })
       expect(fs.writeFile).toHaveBeenCalled()
     })
 
@@ -173,28 +175,28 @@ describe('FileHandler', () => {
   describe('generateFilePath', () => {
     it('should use provided filename and path', () => {
       const result = fileHandler.generateFilePath('/test/path', 'myfile.txt')
-
-      expect(result).toBe('/test/path/myfile.txt')
+      const expected = process.platform === 'win32' ? '\\test\\path\\myfile.txt' : '/test/path/myfile.txt'
+      expect(result).toBe(expected)
     })
 
     it('should add extension if filename has none', () => {
       const result = fileHandler.generateFilePath('/test/path', 'myfile', '.txt')
-
-      expect(result).toBe('/test/path/myfile.txt')
+      const expectedNoExt = process.platform === 'win32' ? '\\test\\path\\myfile.txt' : '/test/path/myfile.txt'
+      expect(result).toBe(expectedNoExt)
     })
 
     it('should generate unique filename if none provided', () => {
       const result = fileHandler.generateFilePath('/test/path', null, '.txt')
-
-      expect(result).toContain('/test/path/clipboard-2023-01-01T12-00-00-000Z-123e4567.txt')
+      const expectedFragment = process.platform === 'win32' ? '\\test\\path\\clipboard-2023-01-01T12-00-00-000Z-123e4567.txt' : '/test/path/clipboard-2023-01-01T12-00-00-000Z-123e4567.txt'
+      expect(result).toContain(expectedFragment)
     })
 
     it('should use current working directory if no path provided', () => {
       jest.spyOn(process, 'cwd').mockReturnValue('/current/dir')
 
       const result = fileHandler.generateFilePath(null, 'test.txt')
-
-      expect(result).toBe('/current/dir/test.txt')
+      const expectedCwd = process.platform === 'win32' ? '\\current\\dir\\test.txt' : '/current/dir/test.txt'
+      expect(result).toBe(expectedCwd)
 
       process.cwd.mockRestore()
     })

@@ -148,9 +148,10 @@ describe('REAL Functionality Tests', () => {
 
   describe('Module Import Tests', () => {
     it('should import ClipboardManager without errors', async () => {
+      const clipboardPath = path.join(__dirname, '../src/clipboard.js').replace(/\\/g, '/')
       const testScript = `
         try {
-          const ClipboardManager = require('${path.join(__dirname, '../src/clipboard.js')}');
+          const ClipboardManager = require('${clipboardPath}');
           const manager = new ClipboardManager();
           console.log('ClipboardManager loaded successfully');
           process.exit(0);
@@ -175,9 +176,10 @@ describe('REAL Functionality Tests', () => {
     }, 10000)
 
     it('should import FileHandler without errors', async () => {
+      const fileHandlerPath = path.join(__dirname, '../src/fileHandler.js').replace(/\\/g, '/')
       const testScript = `
         try {
-          const FileHandler = require('${path.join(__dirname, '../src/fileHandler.js')}');
+          const FileHandler = require('${fileHandlerPath}');
           const handler = new FileHandler();
           console.log('FileHandler loaded successfully');
           process.exit(0);
@@ -202,9 +204,10 @@ describe('REAL Functionality Tests', () => {
     }, 10000)
 
     it('should import CLI without errors', async () => {
+      const cliPath = path.join(__dirname, '../src/cli.js').replace(/\\/g, '/')
       const testScript = `
         try {
-          const CLI = require('${path.join(__dirname, '../src/cli.js')}');
+          const CLI = require('${cliPath}');
           const cli = new CLI();
           console.log('CLI loaded successfully');
           process.exit(0);
