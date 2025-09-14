@@ -14,7 +14,7 @@ describe('Global Executable Tests', () => {
     try {
       await new Promise((resolve, reject) => {
         const command = process.platform === 'win32' ? 'where clipaste' : 'which clipaste'
-        exec(command, (error, stdout) => {
+        exec(command, { timeout: 3000 }, (error, stdout) => {
           if (error) reject(error)
           else {
             isGloballyInstalled = true
@@ -30,7 +30,7 @@ describe('Global Executable Tests', () => {
     // Create test directory
     testDir = path.join(os.tmpdir(), 'clipaste-global-exec-test')
     await fs.mkdir(testDir, { recursive: true })
-  })
+  }, 10000)
 
   afterAll(async () => {
     // Clean up
