@@ -24,8 +24,8 @@ async function main () {
       console.log('isBuffer:', Buffer.isBuffer(parsed.data))
     }
 
-  // For negative tests (shouldWork === false) we intentionally expect failure (exit code 1)
-  const success = shouldWork ? (isImage && !!parsed) : false
+    // For negative tests (shouldWork === false) we intentionally expect failure (exit code 1)
+    const success = shouldWork ? (isImage && !!parsed) : false
     if (!success) {
       // Allow a soft pass only for EXPECTED working cases on Windows (flaky platform nuance)
       const isWin = process.platform === 'win32'
