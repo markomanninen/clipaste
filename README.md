@@ -1,6 +1,6 @@
 # clipaste
 
-[![npm version](https://badge.fury.io/js/clipaste.svg)](https://badge.fury.io/js/clipaste)
+[![npm version](https://img.shields.io/npm/v/clipaste.svg)](https://www.npmjs.com/package/clipaste)
 [![CI](https://github.com/markomanninen/clipaste/actions/workflows/ci.yml/badge.svg)](https://github.com/markomanninen/clipaste/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/markomanninen/clipaste/branch/main/graph/badge.svg)](https://codecov.io/gh/markomanninen/clipaste)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
