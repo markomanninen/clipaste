@@ -1,6 +1,6 @@
 {
   "name": "clipaste",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Cross-platform CLI tool for clipboard operations - paste, copy, and manage text and images",
   "main": "src/index.js",
   "bin": {
