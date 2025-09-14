@@ -18,8 +18,14 @@ class ClipboardManager {
   async hasContent () {
     try {
       const clipboardy = await getClipboardy()
-      const content = await clipboardy.read()
-      return content != null && content.length > 0
+      // Retry a few times in case of transient empty clipboard on some platforms (e.g., Windows or older Node versions)
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const content = await clipboardy.read()
+        if (content != null && content.length > 0) return true
+        // Small delay before retry unless last attempt
+        if (attempt < 2) await new Promise(resolve => setTimeout(resolve, 15))
+      }
+      return false
     } catch (error) {
       throw new Error(`Failed to read clipboard: ${error.message}`)
     }
@@ -28,8 +34,13 @@ class ClipboardManager {
   async readText () {
     try {
       const clipboardy = await getClipboardy()
-      const content = await clipboardy.read()
-      return content
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const content = await clipboardy.read()
+        if (content != null && content.length > 0) return content
+        if (attempt < 2) await new Promise(resolve => setTimeout(resolve, 15))
+      }
+      // Return empty string if still empty to preserve existing semantics for empty clipboard
+      return ''
     } catch (error) {
       throw new Error(`Failed to read text from clipboard: ${error.message}`)
     }
