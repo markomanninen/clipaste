@@ -2,6 +2,7 @@ const { spawn } = require('child_process')
 const fs = require('fs').promises
 const path = require('path')
 const os = require('os')
+const { version } = require('../package.json')
 
 // Global usage tests for the CLI tool
 describe('Global Usage Tests', () => {
@@ -72,7 +73,7 @@ describe('Global Usage Tests', () => {
       const result = await runCLIFromDir(nestedDir, ['--version'])
 
       expect(result.code).toBe(0)
-      expect(result.stdout).toContain('1.0.0')
+      expect(result.stdout).toContain(version)
     })
   })
 

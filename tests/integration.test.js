@@ -1,6 +1,7 @@
 const { spawn } = require('child_process')
 const fs = require('fs').promises
 const path = require('path')
+const { version } = require('../package.json')
 
 // Integration tests for the CLI tool
 describe('CLI Integration Tests', () => {
@@ -64,7 +65,7 @@ describe('CLI Integration Tests', () => {
       const result = await runCLI(['--version'])
 
       expect(result.code).toBe(0)
-      expect(result.stdout).toContain('1.0.0')
+      expect(result.stdout).toContain(version)
     })
   })
 

@@ -1,6 +1,7 @@
 const { Command } = require('commander')
 const ClipboardManager = require('./clipboard')
 const FileHandler = require('./fileHandler')
+const { version } = require('../package.json')
 
 class CLI {
   constructor () {
@@ -14,7 +15,7 @@ class CLI {
     this.program
       .name('clipaste')
       .description('CLI tool to paste clipboard content to files')
-      .version('1.0.0')
+      .version(version)
 
     // Main paste command
     this.program

@@ -1,5 +1,6 @@
 const { spawn } = require('child_process')
 const path = require('path')
+const { version } = require('../package.json')
 
 // SMOKE TESTS - Basic "does it work at all" tests
 describe('Smoke Tests - Basic Functionality', () => {
@@ -56,7 +57,7 @@ describe('Smoke Tests - Basic Functionality', () => {
       expect(result.stderr).not.toContain('Cannot find module')
 
       expect(result.code).toBe(0)
-      expect(result.stdout).toContain('1.0.0')
+      expect(result.stdout).toContain(version)
     })
 
     it('should handle status command without function errors', async () => {

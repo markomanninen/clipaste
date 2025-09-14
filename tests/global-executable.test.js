@@ -2,6 +2,7 @@ const { spawn, exec } = require('child_process')
 const fs = require('fs').promises
 const path = require('path')
 const os = require('os')
+const { version } = require('../package.json')
 
 // Tests for the globally installed clipaste command
 describe('Global Executable Tests', () => {
@@ -88,7 +89,7 @@ describe('Global Executable Tests', () => {
       const result = await runGlobalCommand(testDir, ['--version'])
 
       expect(result.code).toBe(0)
-      expect(result.stdout).toContain('1.0.0')
+      expect(result.stdout).toContain(version)
     }, 10000)
 
     it('should work from different directories', async () => {
