@@ -1,141 +1,141 @@
-const fs = require('fs').promises;
-const path = require('path');
-const { v4: uuidv4 } = require('uuid');
-const sharp = require('sharp');
+const fs = require('fs').promises
+const path = require('path')
+const { v4: uuidv4 } = require('uuid')
+const sharp = require('sharp')
 
 class FileHandler {
-  constructor() {
-    this.defaultTextExtension = '.txt';
-    this.defaultImageExtension = '.png';
+  constructor () {
+    this.defaultTextExtension = '.txt'
+    this.defaultImageExtension = '.png'
   }
 
-  async saveText(content, options = {}) {
+  async saveText (content, options = {}) {
     const {
       outputPath,
       filename,
       extension = this.defaultTextExtension
-    } = options;
+    } = options
 
-    const filePath = this.generateFilePath(outputPath, filename, extension);
-    
+    const filePath = this.generateFilePath(outputPath, filename, extension)
+
     try {
-      await this.ensureDirectoryExists(path.dirname(filePath));
-      await fs.writeFile(filePath, content, 'utf8');
-      return filePath;
+      await this.ensureDirectoryExists(path.dirname(filePath))
+      await fs.writeFile(filePath, content, 'utf8')
+      return filePath
     } catch (error) {
-      throw new Error(`Failed to save text file: ${error.message}`);
+      throw new Error(`Failed to save text file: ${error.message}`)
     }
   }
 
-  async saveImage(imageData, options = {}) {
+  async saveImage (imageData, options = {}) {
     const {
       outputPath,
       filename,
       extension,
       format = 'png',
       quality = 90
-    } = options;
+    } = options
 
-    const imageExtension = extension || `.${format}`;
-    const filePath = this.generateFilePath(outputPath, filename, imageExtension);
+    const imageExtension = extension || `.${format}`
+    const filePath = this.generateFilePath(outputPath, filename, imageExtension)
 
     try {
-      await this.ensureDirectoryExists(path.dirname(filePath));
-      
-      let processedData = imageData;
-      
+      await this.ensureDirectoryExists(path.dirname(filePath))
+
+      let processedData = imageData
+
       // If it's a Buffer, process with sharp
       if (Buffer.isBuffer(imageData)) {
-        const sharpInstance = sharp(imageData);
-        
+        const sharpInstance = sharp(imageData)
+
         switch (format.toLowerCase()) {
           case 'jpeg':
           case 'jpg':
-            processedData = await sharpInstance.jpeg({ quality }).toBuffer();
-            break;
+            processedData = await sharpInstance.jpeg({ quality }).toBuffer()
+            break
           case 'png':
-            processedData = await sharpInstance.png().toBuffer();
-            break;
+            processedData = await sharpInstance.png().toBuffer()
+            break
           case 'webp':
-            processedData = await sharpInstance.webp({ quality }).toBuffer();
-            break;
+            processedData = await sharpInstance.webp({ quality }).toBuffer()
+            break
           default:
-            processedData = await sharpInstance.png().toBuffer();
+            processedData = await sharpInstance.png().toBuffer()
         }
       }
-      
-      await fs.writeFile(filePath, processedData);
-      return filePath;
+
+      await fs.writeFile(filePath, processedData)
+      return filePath
     } catch (error) {
-      throw new Error(`Failed to save image file: ${error.message}`);
+      throw new Error(`Failed to save image file: ${error.message}`)
     }
   }
 
-  generateFilePath(outputPath, filename, extension) {
-    const dir = outputPath || process.cwd();
-    
+  generateFilePath (outputPath, filename, extension) {
+    const dir = outputPath || process.cwd()
+
     if (filename) {
-      const hasExtension = path.extname(filename);
-      const finalFilename = hasExtension ? filename : filename + extension;
-      return path.join(dir, finalFilename);
+      const hasExtension = path.extname(filename)
+      const finalFilename = hasExtension ? filename : filename + extension
+      return path.join(dir, finalFilename)
     }
-    
+
     // Generate unique filename with timestamp and UUID
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const shortId = uuidv4().split('-')[0];
-    const generatedFilename = `clipboard-${timestamp}-${shortId}${extension}`;
-    
-    return path.join(dir, generatedFilename);
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+    const shortId = uuidv4().split('-')[0]
+    const generatedFilename = `clipboard-${timestamp}-${shortId}${extension}`
+
+    return path.join(dir, generatedFilename)
   }
 
-  async ensureDirectoryExists(dirPath) {
+  async ensureDirectoryExists (dirPath) {
     try {
-      await fs.access(dirPath);
+      await fs.access(dirPath)
     } catch (error) {
       if (error.code === 'ENOENT') {
-        await fs.mkdir(dirPath, { recursive: true });
+        await fs.mkdir(dirPath, { recursive: true })
       } else {
-        throw error;
+        throw error
       }
     }
   }
 
-  async fileExists(filePath) {
+  async fileExists (filePath) {
     try {
-      await fs.access(filePath);
-      return true;
+      await fs.access(filePath)
+      return true
     } catch {
-      return false;
+      return false
     }
   }
 
-  getFileExtensionFromFormat(format) {
+  getFileExtensionFromFormat (format) {
     const formatMap = {
-      'jpeg': '.jpg',
-      'jpg': '.jpg',
-      'png': '.png',
-      'gif': '.gif',
-      'bmp': '.bmp',
-      'webp': '.webp'
-    };
-    
-    return formatMap[format.toLowerCase()] || '.png';
+      jpeg: '.jpg',
+      jpg: '.jpg',
+      png: '.png',
+      gif: '.gif',
+      bmp: '.bmp',
+      webp: '.webp'
+    }
+
+    return formatMap[format.toLowerCase()] || '.png'
   }
 
-  async getFileStats(filePath) {
+  async getFileStats (filePath) {
     try {
-      const stats = await fs.stat(filePath);
+      const stats = await fs.stat(filePath)
       return {
         size: stats.size,
         created: stats.birthtime,
         modified: stats.mtime,
         isFile: stats.isFile(),
         isDirectory: stats.isDirectory()
-      };
+      }
     } catch (error) {
-      throw new Error(`Failed to get file stats: ${error.message}`);
+      throw new Error(`Failed to get file stats: ${error.message}`)
     }
   }
 }
 
-module.exports = FileHandler;
+module.exports = FileHandler

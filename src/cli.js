@@ -1,20 +1,20 @@
-const { Command } = require('commander');
-const ClipboardManager = require('./clipboard');
-const FileHandler = require('./fileHandler');
+const { Command } = require('commander')
+const ClipboardManager = require('./clipboard')
+const FileHandler = require('./fileHandler')
 
 class CLI {
-  constructor() {
-    this.program = new Command();
-    this.clipboardManager = new ClipboardManager();
-    this.fileHandler = new FileHandler();
-    this.setupCommands();
+  constructor () {
+    this.program = new Command()
+    this.clipboardManager = new ClipboardManager()
+    this.fileHandler = new FileHandler()
+    this.setupCommands()
   }
 
-  setupCommands() {
+  setupCommands () {
     this.program
       .name('clipaste')
       .description('CLI tool to paste clipboard content to files')
-      .version('1.0.0');
+      .version('1.0.0')
 
     // Main paste command
     this.program
@@ -28,16 +28,16 @@ class CLI {
       .option('--ext <extension>', 'File extension override')
       .option('--dry-run', 'Show what would be done without saving')
       .action(async (options) => {
-        await this.handlePaste(options);
-      });
+        await this.handlePaste(options)
+      })
 
     // Status command
     this.program
       .command('status')
       .description('Check clipboard status and content type')
       .action(async () => {
-        await this.handleStatus();
-      });
+        await this.handleStatus()
+      })
 
     // Clear command
     this.program
@@ -46,8 +46,8 @@ class CLI {
       .option('--confirm', 'Prompt before clearing')
       .option('--backup', 'Save to file before clearing')
       .action(async (options) => {
-        await this.handleClear(options);
-      });
+        await this.handleClear(options)
+      })
 
     // Copy command
     this.program
@@ -56,8 +56,8 @@ class CLI {
       .argument('[text]', 'Text to copy to clipboard')
       .option('--file <path>', 'Copy file contents to clipboard')
       .action(async (text, options) => {
-        await this.handleCopy(text, options);
-      });
+        await this.handleCopy(text, options)
+      })
 
     // Get command
     this.program
@@ -65,38 +65,38 @@ class CLI {
       .description('Output clipboard content to stdout')
       .option('--raw', 'Output raw content without processing')
       .action(async (options) => {
-        await this.handleGet(options);
-      });
+        await this.handleGet(options)
+      })
   }
 
-  async handlePaste(options) {
+  async handlePaste (options) {
     try {
-      const hasContent = await this.clipboardManager.hasContent();
+      const hasContent = await this.clipboardManager.hasContent()
       if (!hasContent) {
-        console.log('Clipboard is empty');
-        process.exit(1);
+        console.log('Clipboard is empty')
+        process.exit(1)
       }
 
-      const contentType = options.type || await this.clipboardManager.getContentType();
-      
+      const contentType = options.type || await this.clipboardManager.getContentType()
+
       if (options.dryRun) {
-        console.log(`Would paste ${contentType} content to:`, 
+        console.log(`Would paste ${contentType} content to:`,
           this.fileHandler.generateFilePath(
-            options.output, 
-            options.filename, 
+            options.output,
+            options.filename,
             options.ext || (contentType === 'image' ? '.png' : '.txt')
           )
-        );
-        return;
+        )
+        return
       }
 
-      let filePath;
+      let filePath
 
       if (contentType === 'image') {
-        const imageData = await this.clipboardManager.readImage();
+        const imageData = await this.clipboardManager.readImage()
         if (!imageData) {
-          console.log('No image data found in clipboard');
-          process.exit(1);
+          console.log('No image data found in clipboard')
+          process.exit(1)
         }
 
         filePath = await this.fileHandler.saveImage(imageData.data, {
@@ -105,188 +105,187 @@ class CLI {
           extension: options.ext,
           format: options.format,
           quality: parseInt(options.quality)
-        });
+        })
       } else {
-        const textContent = await this.clipboardManager.readText();
+        const textContent = await this.clipboardManager.readText()
         filePath = await this.fileHandler.saveText(textContent, {
           outputPath: options.output,
           filename: options.filename,
           extension: options.ext
-        });
+        })
       }
 
-      const stats = await this.fileHandler.getFileStats(filePath);
-      console.log(`Saved ${contentType} content to: ${filePath}`);
-      console.log(`File size: ${this.formatFileSize(stats.size)}`);
-
+      const stats = await this.fileHandler.getFileStats(filePath)
+      console.log(`Saved ${contentType} content to: ${filePath}`)
+      console.log(`File size: ${this.formatFileSize(stats.size)}`)
     } catch (error) {
-      console.error('Error:', error.message);
-      process.exit(1);
+      console.error('Error:', error.message)
+      process.exit(1)
     }
   }
 
-  async handleStatus() {
+  async handleStatus () {
     try {
-      const hasContent = await this.clipboardManager.hasContent();
-      
+      const hasContent = await this.clipboardManager.hasContent()
+
       if (!hasContent) {
-        console.log('Clipboard is empty');
-        return;
+        console.log('Clipboard is empty')
+        return
       }
 
-      const contentType = await this.clipboardManager.getContentType();
-      console.log(`Clipboard contains: ${contentType} content`);
+      const contentType = await this.clipboardManager.getContentType()
+      console.log(`Clipboard contains: ${contentType} content`)
 
       if (contentType === 'text') {
-        const content = await this.clipboardManager.readText();
-        const preview = content.length > 100 ? 
-          content.substring(0, 100) + '...' : content;
-        console.log(`Preview: ${preview}`);
-        console.log(`Length: ${content.length} characters`);
+        const content = await this.clipboardManager.readText()
+        const preview = content.length > 100
+          ? content.substring(0, 100) + '...'
+          : content
+        console.log(`Preview: ${preview}`)
+        console.log(`Length: ${content.length} characters`)
       } else if (contentType === 'image') {
-        const imageData = await this.clipboardManager.readImage();
+        const imageData = await this.clipboardManager.readImage()
         if (imageData) {
-          console.log(`Image format: ${imageData.format}`);
-          console.log(`Image size: ${this.formatFileSize(imageData.data.length)}`);
+          console.log(`Image format: ${imageData.format}`)
+          console.log(`Image size: ${this.formatFileSize(imageData.data.length)}`)
         }
       }
-
     } catch (error) {
-      console.error('Error:', error.message);
-      process.exit(1);
+      console.error('Error:', error.message)
+      process.exit(1)
     }
   }
 
-  async handleClear(options = {}) {
+  async handleClear (options = {}) {
     try {
       // Check if clipboard has content first
-      const hasContent = await this.clipboardManager.hasContent();
+      const hasContent = await this.clipboardManager.hasContent()
       if (!hasContent) {
-        console.log('Clipboard is already empty');
-        return;
+        console.log('Clipboard is already empty')
+        return
       }
 
       // Backup if requested
       if (options.backup) {
-        const content = await this.clipboardManager.readText();
+        const content = await this.clipboardManager.readText()
         const filePath = await this.fileHandler.saveText(content, {
           outputPath: process.cwd(),
           filename: `clipboard-backup-${new Date().toISOString().replace(/[:.]/g, '-')}`
-        });
-        console.log(`Backed up clipboard content to: ${filePath}`);
+        })
+        console.log(`Backed up clipboard content to: ${filePath}`)
       }
 
       // Confirm if requested
       if (options.confirm) {
-        const readline = require('readline');
+        const readline = require('readline')
         const rl = readline.createInterface({
           input: process.stdin,
           output: process.stdout
-        });
+        })
 
         const answer = await new Promise((resolve) => {
-          rl.question('Are you sure you want to clear the clipboard? (y/N): ', resolve);
-        });
-        rl.close();
+          rl.question('Are you sure you want to clear the clipboard? (y/N): ', resolve)
+        })
+        rl.close()
 
         if (answer.toLowerCase() !== 'y' && answer.toLowerCase() !== 'yes') {
-          console.log('Clear cancelled');
-          return;
+          console.log('Clear cancelled')
+          return
         }
       }
 
-      await this.clipboardManager.clear();
-      console.log('Clipboard cleared');
+      await this.clipboardManager.clear()
+      console.log('Clipboard cleared')
     } catch (error) {
-      console.error('Error clearing clipboard:', error.message);
-      process.exit(1);
+      console.error('Error clearing clipboard:', error.message)
+      process.exit(1)
     }
   }
 
-  async handleCopy(text, options) {
+  async handleCopy (text, options) {
     try {
       if (options.file) {
         // Copy file contents
-        const fs = require('fs').promises;
-        const path = require('path');
-        
+        const fs = require('fs').promises
+        const path = require('path')
+
         try {
-          const content = await fs.readFile(options.file, 'utf8');
-          await this.clipboardManager.writeText(content);
-          console.log(`Copied contents of ${path.basename(options.file)} to clipboard`);
+          const content = await fs.readFile(options.file, 'utf8')
+          await this.clipboardManager.writeText(content)
+          console.log(`Copied contents of ${path.basename(options.file)} to clipboard`)
         } catch (error) {
-          console.error(`Error reading file ${options.file}:`, error.message);
-          process.exit(1);
+          console.error(`Error reading file ${options.file}:`, error.message)
+          process.exit(1)
         }
       } else if (text) {
         // Copy provided text
-        await this.clipboardManager.writeText(text);
-        console.log(`Copied text to clipboard (${text.length} characters)`);
+        await this.clipboardManager.writeText(text)
+        console.log(`Copied text to clipboard (${text.length} characters)`)
       } else {
         // Check if stdin has data
         if (process.stdin.isTTY) {
-          console.log('No content provided to copy');
-          return;
+          console.log('No content provided to copy')
+          return
         }
-        
+
         // Read from stdin
-        const chunks = [];
-        process.stdin.setEncoding('utf8');
-        
+        const chunks = []
+        process.stdin.setEncoding('utf8')
+
         return new Promise((resolve) => {
           process.stdin.on('data', (chunk) => {
-            chunks.push(chunk);
-          });
-          
+            chunks.push(chunk)
+          })
+
           process.stdin.on('end', async () => {
-            const content = chunks.join('');
+            const content = chunks.join('')
             if (content.trim()) {
-              await this.clipboardManager.writeText(content);
-              console.log(`Copied piped content to clipboard (${content.length} characters)`);
+              await this.clipboardManager.writeText(content)
+              console.log(`Copied piped content to clipboard (${content.length} characters)`)
             } else {
-              console.log('No content provided to copy');
+              console.log('No content provided to copy')
             }
-            resolve();
-          });
-        });
+            resolve()
+          })
+        })
       }
     } catch (error) {
-      console.error('Error copying to clipboard:', error.message);
-      process.exit(1);
+      console.error('Error copying to clipboard:', error.message)
+      process.exit(1)
     }
   }
 
-  async handleGet(options) {
+  async handleGet (options) {
     try {
-      const hasContent = await this.clipboardManager.hasContent();
+      const hasContent = await this.clipboardManager.hasContent()
       if (!hasContent) {
         // Don't output anything if clipboard is empty, just like pbpaste
-        return;
+        return
       }
 
-      const content = await this.clipboardManager.readText();
-      
+      const content = await this.clipboardManager.readText()
+
       if (options.raw) {
-        process.stdout.write(content);
+        process.stdout.write(content)
       } else {
-        console.log(content);
+        console.log(content)
       }
     } catch (error) {
-      console.error('Error reading from clipboard:', error.message);
-      process.exit(1);
+      console.error('Error reading from clipboard:', error.message)
+      process.exit(1)
     }
   }
 
-  formatFileSize(bytes) {
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    if (bytes === 0) return '0 Bytes';
-    const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+  formatFileSize (bytes) {
+    const sizes = ['Bytes', 'KB', 'MB', 'GB']
+    if (bytes === 0) return '0 Bytes'
+    const i = Math.floor(Math.log(bytes) / Math.log(1024))
+    return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i]
   }
 
-  async run(argv = process.argv) {
-    await this.program.parseAsync(argv);
+  async run (argv = process.argv) {
+    await this.program.parseAsync(argv)
   }
 }
 
-module.exports = CLI;
+module.exports = CLI
