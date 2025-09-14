@@ -92,6 +92,7 @@ describe('REAL Image Handling Tests', () => {
     it('should create actual PNG files from base64 data', async () => {
       const fileHandlerPath = path.join(__dirname, '../src/fileHandler.js').replace(/\\/g, '/')
       const clipboardPath = path.join(__dirname, '../src/clipboard.js').replace(/\\/g, '/')
+      const testDirForScript = testDir.replace(/\\/g, '/')
       const testScript = `
         try {
           const FileHandler = require('${fileHandlerPath}');
@@ -109,7 +110,7 @@ describe('REAL Image Handling Tests', () => {
           }
           
           fileHandler.saveImage(imageData.data, {
-            outputPath: '${testDir}',
+            outputPath: '${testDirForScript}',
             filename: 'real-test-image',
             format: 'png'
           }).then(filePath => {
@@ -149,11 +150,6 @@ describe('REAL Image Handling Tests', () => {
       if (pngFiles.length === 0) {
         console.error('No PNG files found. Directory contents:', files)
         console.error('Test directory:', testDir)
-        // On Windows, allow soft fail for file creation issues
-        if (process.platform === 'win32') {
-          console.warn('WINDOWS_SOFT_FAIL: PNG file creation test - skipping for platform compatibility')
-          return
-        }
       }
       expect(pngFiles.length).toBeGreaterThan(0)
 
@@ -176,6 +172,7 @@ describe('REAL Image Handling Tests', () => {
       for (const format of formats) {
         const fileHandlerPath = path.join(__dirname, '../src/fileHandler.js').replace(/\\/g, '/')
         const clipboardPath = path.join(__dirname, '../src/clipboard.js').replace(/\\/g, '/')
+        const testDirForScript = testDir.replace(/\\/g, '/')
         const testScript = `
           try {
             const FileHandler = require('${fileHandlerPath}');
@@ -193,7 +190,7 @@ describe('REAL Image Handling Tests', () => {
             }
             
             fileHandler.saveImage(imageData.data, {
-              outputPath: '${testDir}',
+              outputPath: '${testDirForScript}',
               filename: 'test-${format}',
               format: '${format}'
             }).then(filePath => {
@@ -223,11 +220,6 @@ describe('REAL Image Handling Tests', () => {
           console.error(`${format} image file creation failed:`)
           console.error('STDOUT:', result.stdout)
           console.error('STDERR:', result.stderr)
-          // On Windows, allow soft fail for file creation issues with specific formats
-          if (process.platform === 'win32') {
-            console.warn(`WINDOWS_SOFT_FAIL: ${format} file creation test - skipping for platform compatibility`)
-            continue
-          }
         }
         expect(result.code).toBe(0)
         expect(result.stdout).toContain(`${format} file created:`)
