@@ -5,23 +5,27 @@ Thank you for your interest in contributing to clipaste! This document provides 
 ## Development Setup
 
 1. **Fork and clone the repository**
+
    ```bash
    git clone https://github.com/markomanninen/clipaste.git
    cd clipaste
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Install system dependencies (Linux only)**
+
    ```bash
    # Ubuntu/Debian
    sudo apt-get install xclip
    ```
 
 4. **Run tests to ensure everything works**
+
    ```bash
    npm test
    ```
@@ -29,6 +33,7 @@ Thank you for your interest in contributing to clipaste! This document provides 
 ## Development Workflow
 
 1. **Create a feature branch**
+
    ```bash
    git checkout -b feature/your-feature-name
    ```
@@ -39,6 +44,7 @@ Thank you for your interest in contributing to clipaste! This document provides 
    - Update documentation as needed
 
 3. **Test your changes**
+
    ```bash
    npm test           # Run all tests
    npm run test:watch # Run tests in watch mode
@@ -47,6 +53,7 @@ Thank you for your interest in contributing to clipaste! This document provides 
    ```
 
 4. **Commit and push**
+
    ```bash
    git add .
    git commit -m "feat: add your feature description"
@@ -89,6 +96,7 @@ Use conventional commits format:
 - `chore:` - Maintenance tasks
 
 Examples:
+
 ```
 feat: add clipboard history command
 fix: handle empty clipboard gracefully  
@@ -118,7 +126,7 @@ npm run release:major  # Breaking changes (1.0.0 → 2.0.0)
 
 - **GitHub Issues**: Report bugs or request features
 - **Discussions**: Ask questions or propose ideas
-- **Email**: Contact marko.manninen@gmail.com
+- **Email**: Contact <marko.manninen@gmail.com>
 
 ## Enhancement Priorities
 

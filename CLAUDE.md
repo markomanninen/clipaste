@@ -61,7 +61,7 @@ The project uses the following structure:
 
 ### Expected Architecture
 
-```
+```text
 ├── src/
 │   ├── cli.js/py/rs    # Main CLI entry point
 │   ├── clipboard.js    # Clipboard operations
@@ -88,6 +88,7 @@ When implementing this tool, consider:
 ## Technology Considerations
 
 The implementation language should be chosen based on:
+
 - **Node.js**: Good cross-platform clipboard libraries, easy file handling
 - **Python**: Excellent clipboard libraries (pyperclip, PIL), cross-platform
 - **Rust**: Fast, memory-safe, good for CLI tools, cross-platform compilation

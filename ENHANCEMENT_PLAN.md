@@ -5,6 +5,7 @@ This document outlines planned enhancements to make clipaste a more complete cli
 ## 🎯 Current Status (v1.0.0)
 
 **✅ Phase 1 COMPLETED** - Core clipboard operations with bidirectional functionality
+
 - All planned Phase 1 features implemented and tested
 - 140 comprehensive tests passing
 - Cross-platform compatibility verified
@@ -13,11 +14,13 @@ This document outlines planned enhancements to make clipaste a more complete cli
 ## Current Limitations
 
 ### ✅ Resolved in Phase 1
+
 - ~~Cannot write to clipboard~~ - ✅ **clipaste copy** implemented
 - ~~No stdout output~~ - ✅ **clipaste get** implemented
 - ~~Limited clear functionality~~ - ✅ Enhanced with backup/confirm options
 
 ### Remaining Core Features (Phase 2+)
+
 - **No real-time monitoring** - cannot watch for clipboard changes
 - **No memory-only operations** - always creates files  
 - **No clipboard history** - cannot restore previous clipboard items

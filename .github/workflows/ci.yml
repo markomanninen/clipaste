@@ -12,13 +12,9 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        node-version: [16, 18, 20]
-        include:
-          # Test on older Node versions for compatibility
-          - os: ubuntu-latest
-            node-version: 14
-          - os: macos-latest
-            node-version: 14
+        # Test against currently supported LTS and current release
+        # Node 16 enters maintenance and will be dropped soon; keep for now if needed.
+        node-version: [16, 18, 20, 22]
 
     steps:
     - name: Checkout repository
@@ -66,7 +62,7 @@ jobs:
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
-      if: matrix.os == 'ubuntu-latest' && matrix.node-version == '18'
+      if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20'
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         directory: ./coverage

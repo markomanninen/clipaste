@@ -49,7 +49,7 @@
     "url": "https://github.com/markomanninen/clipaste/issues"
   },
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=16.0.0"
   },
   "files": [
     "src/",
