@@ -1,0 +1,82 @@
+{
+  "name": "clipaste",
+  "version": "1.0.0",
+  "description": "Cross-platform CLI tool for clipboard operations - paste, copy, and manage text and images",
+  "main": "src/index.js",
+  "bin": {
+    "clipaste": "./src/index.js"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src/ tests/",
+    "lint:fix": "eslint src/ tests/ --fix",
+    "prepublishOnly": "npm test && npm run lint",
+    "preversion": "npm test",
+    "version": "npm run lint:fix && git add -A src",
+    "postversion": "git push && git push --tags",
+    "release:patch": "npm version patch",
+    "release:minor": "npm version minor",
+    "release:major": "npm version major",
+    "prepare": "husky install || true"
+  },
+  "keywords": [
+    "clipboard",
+    "cli",
+    "paste",
+    "copy",
+    "image",
+    "text",
+    "cross-platform",
+    "pbcopy",
+    "pbpaste",
+    "macos",
+    "windows",
+    "linux",
+    "command-line",
+    "terminal"
+  ],
+  "author": "Marko Manninen <marko.manninen@gmail.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/markomanninen/clipaste#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/markomanninen/clipaste.git"
+  },
+  "bugs": {
+    "url": "https://github.com/markomanninen/clipaste/issues"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "files": [
+    "src/",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "dependencies": {
+    "clipboardy": "^3.0.0",
+    "commander": "^11.0.0",
+    "sharp": "^0.32.0",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0",
+    "eslint": "^8.0.0",
+    "@eslint/js": "^9.0.0",
+    "eslint-config-standard": "^17.0.0",
+    "husky": "^8.0.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "collectCoverageFrom": [
+      "src/**/*.js",
+      "!src/index.js"
+    ],
+    "coverageDirectory": "coverage",
+    "coverageReporters": ["text", "lcov", "html"]
+  }
+}

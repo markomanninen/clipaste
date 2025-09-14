@@ -1,0 +1,93 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish-npm:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        registry-url: 'https://registry.npmjs.org'
+        cache: 'npm'
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y xvfb xclip
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run tests
+      run: xvfb-run -a npm test
+      env:
+        CI: true
+
+    - name: Run linting
+      run: npm run lint
+
+    - name: Publish to NPM
+      run: npm publish
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  create-binaries:
+    runs-on: ${{ matrix.os }}
+    needs: publish-npm
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            arch: x64
+            platform: linux
+          - os: macos-latest
+            arch: x64
+            platform: darwin
+          - os: windows-latest
+            arch: x64
+            platform: win32
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install system dependencies (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y xclip
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Create standalone binary (if pkg is available)
+      run: |
+        if npm list pkg > /dev/null 2>&1; then
+          npx pkg package.json --target node18-${{ matrix.platform }}-${{ matrix.arch }}
+        else
+          echo "Skipping binary creation - pkg not available"
+        fi
+      continue-on-error: true
+
+    - name: Upload binary to release
+      uses: softprops/action-gh-release@v1
+      if: hashFiles('clipaste*') != ''
+      with:
+        files: clipaste*
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
