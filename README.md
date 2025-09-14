@@ -232,6 +232,8 @@ npm run test:coverage
 npm run test:watch
 ```
 
+> Note: `clipboardy` is ESM-only. The library is loaded via a lazy dynamic `import()` inside `src/clipboard.js`. Real functionality and smoke tests that directly exercise the dependency spawn child Node processes and also use dynamic `import()` to validate availability without converting the whole project to ESM.
+
 ### Linting
 
 ```bash

@@ -232,18 +232,21 @@ describe('REAL Functionality Tests', () => {
   describe('Clipboardy Direct Tests', () => {
     it('should be able to load clipboardy module directly', async () => {
       const testScript = `
-        try {
-          const clipboardy = require('clipboardy');
-          console.log('Clipboardy type:', typeof clipboardy);
-          console.log('Clipboardy read type:', typeof clipboardy.read);
-          console.log('Clipboardy write type:', typeof clipboardy.write);
-          console.log('Clipboardy loaded successfully');
-          process.exit(0);
-        } catch (error) {
-          console.error('Failed to load clipboardy:', error.message);
-          console.error('Error details:', error);
-          process.exit(1);
-        }
+        (async () => {
+          try {
+            const mod = await import('clipboardy');
+            const clipboardy = mod.default || mod;
+            console.log('Clipboardy type:', typeof clipboardy);
+            console.log('Clipboardy read type:', typeof clipboardy.read);
+            console.log('Clipboardy write type:', typeof clipboardy.write);
+            console.log('Clipboardy loaded successfully');
+            process.exit(0);
+          } catch (error) {
+            console.error('Failed to load clipboardy:', error.message);
+            console.error('Error details:', error);
+            process.exit(1);
+          }
+        })();
       `
 
       const result = await new Promise((resolve) => {
@@ -270,20 +273,23 @@ describe('REAL Functionality Tests', () => {
 
     it('should be able to call clipboardy functions', async () => {
       const testScript = `
-        try {
-          const clipboardy = require('clipboardy').default;
-          // Try to read clipboard
-          clipboardy.read().then(() => {
-            console.log('Clipboardy read function works');
-            process.exit(0);
-          }).catch((error) => {
-            console.log('Clipboardy read failed but function exists:', error.message);
-            process.exit(0); // Still success if function exists
-          });
-        } catch (error) {
-          console.error('Failed to call clipboardy:', error.message);
-          process.exit(1);
-        }
+        (async () => {
+          try {
+            const mod = await import('clipboardy');
+            const clipboardy = mod.default || mod;
+            // Try to read clipboard
+            clipboardy.read().then(() => {
+              console.log('Clipboardy read function works');
+              process.exit(0);
+            }).catch((error) => {
+              console.log('Clipboardy read failed but function exists:', error.message);
+              process.exit(0); // Still success if function exists
+            });
+          } catch (error) {
+            console.error('Failed to call clipboardy:', error.message);
+            process.exit(1);
+          }
+        })();
       `
 
       const result = await new Promise((resolve) => {

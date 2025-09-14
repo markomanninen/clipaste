@@ -174,23 +174,25 @@ describe('Smoke Tests - Basic Functionality', () => {
   describe('Critical Dependency Tests', () => {
     it('clipboardy module must be loadable and callable', async () => {
       const testScript = `
-        try {
-          const clipboardy = require('clipboardy').default;
-          
-          console.log('Clipboardy loaded');
-          console.log('read function:', typeof clipboardy.read);
-          console.log('write function:', typeof clipboardy.write);
-          
-          if (typeof clipboardy.read === 'function' && typeof clipboardy.write === 'function') {
-            console.log('SUCCESS: clipboardy functions are available');
-          } else {
-            console.error('FAIL: clipboardy functions are not available');
+        (async () => {
+          try {
+            const mod = await import('clipboardy');
+            const clipboardy = mod.default || mod;
+            console.log('Clipboardy loaded');
+            console.log('read function:', typeof clipboardy.read);
+            console.log('write function:', typeof clipboardy.write);
+
+            if (typeof clipboardy.read === 'function' && typeof clipboardy.write === 'function') {
+              console.log('SUCCESS: clipboardy functions are available');
+            } else {
+              console.error('FAIL: clipboardy functions are not available');
+              process.exit(1);
+            }
+          } catch (error) {
+            console.error('FAIL: Cannot load clipboardy:', error.message);
             process.exit(1);
           }
-        } catch (error) {
-          console.error('FAIL: Cannot load clipboardy:', error.message);
-          process.exit(1);
-        }
+        })();
       `
 
       const result = await new Promise((resolve) => {
