@@ -54,6 +54,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- CI matrix updated: dropped Node 14 (EOL) tests; added Node 22; coverage now collected on Node 20
+- Raised minimum supported Node version from 14 to 16 (see `engines.node`) and added `.nvmrc` (Node 20) for local consistency
+- Refactored clipboard access to support ESM-only `clipboardy` via lazy dynamic import
+
+### Fixed
+
+- Resolved test failures caused by requiring ESM `clipboardy` from CommonJS by introducing dynamic import and injectable mock for tests
+
 ### Planned (Phase 2)
 
 - Real-time clipboard monitoring (`clipaste watch`)

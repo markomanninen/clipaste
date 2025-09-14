@@ -1,16 +1,11 @@
 const ClipboardManager = require('../src/clipboard')
 
-// Mock clipboardy
-jest.mock('clipboardy', () => ({
-  default: {
-    read: jest.fn(),
-    write: jest.fn()
-  },
+// Use injection to avoid dynamic ESM import issues
+const mockClipboardy = {
   read: jest.fn(),
   write: jest.fn()
-}))
-
-const clipboardy = require('clipboardy').default || require('clipboardy')
+}
+ClipboardManager.__setMockClipboardy(mockClipboardy)
 
 describe('ClipboardManager', () => {
   let clipboardManager
@@ -22,16 +17,16 @@ describe('ClipboardManager', () => {
 
   describe('hasContent', () => {
     it('should return true when clipboard has content', async () => {
-      clipboardy.read.mockResolvedValue('test content')
+      mockClipboardy.read.mockResolvedValue('test content')
 
       const result = await clipboardManager.hasContent()
 
       expect(result).toBe(true)
-      expect(clipboardy.read).toHaveBeenCalled()
+      expect(mockClipboardy.read).toHaveBeenCalled()
     })
 
     it('should return false when clipboard is empty', async () => {
-      clipboardy.read.mockResolvedValue('')
+      mockClipboardy.read.mockResolvedValue('')
 
       const result = await clipboardManager.hasContent()
 
@@ -39,7 +34,7 @@ describe('ClipboardManager', () => {
     })
 
     it('should throw error when clipboard read fails', async () => {
-      clipboardy.read.mockRejectedValue(new Error('Clipboard access denied'))
+      mockClipboardy.read.mockRejectedValue(new Error('Clipboard access denied'))
 
       await expect(clipboardManager.hasContent()).rejects.toThrow('Failed to read clipboard: Clipboard access denied')
     })
@@ -48,16 +43,16 @@ describe('ClipboardManager', () => {
   describe('readText', () => {
     it('should return text content from clipboard', async () => {
       const testContent = 'Hello, World!'
-      clipboardy.read.mockResolvedValue(testContent)
+      mockClipboardy.read.mockResolvedValue(testContent)
 
       const result = await clipboardManager.readText()
 
       expect(result).toBe(testContent)
-      expect(clipboardy.read).toHaveBeenCalled()
+      expect(mockClipboardy.read).toHaveBeenCalled()
     })
 
     it('should throw error when reading text fails', async () => {
-      clipboardy.read.mockRejectedValue(new Error('Read failed'))
+      mockClipboardy.read.mockRejectedValue(new Error('Read failed'))
 
       await expect(clipboardManager.readText()).rejects.toThrow('Failed to read text from clipboard: Read failed')
     })
@@ -65,7 +60,7 @@ describe('ClipboardManager', () => {
 
   describe('readImage', () => {
     it('should return null for non-image content', async () => {
-      clipboardy.read.mockResolvedValue('plain text')
+      mockClipboardy.read.mockResolvedValue('plain text')
 
       const result = await clipboardManager.readImage()
 
@@ -75,7 +70,7 @@ describe('ClipboardManager', () => {
     it('should parse base64 image data', async () => {
       const base64Data = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
       const dataUrl = `data:image/png;base64,${base64Data}`
-      clipboardy.read.mockResolvedValue(dataUrl)
+      mockClipboardy.read.mockResolvedValue(dataUrl)
 
       const result = await clipboardManager.readImage()
 
@@ -85,7 +80,7 @@ describe('ClipboardManager', () => {
     })
 
     it('should throw error when reading image fails', async () => {
-      clipboardy.read.mockRejectedValue(new Error('Read failed'))
+      mockClipboardy.read.mockRejectedValue(new Error('Read failed'))
 
       await expect(clipboardManager.readImage()).rejects.toThrow('Failed to read image from clipboard: Read failed')
     })
@@ -134,7 +129,7 @@ describe('ClipboardManager', () => {
 
   describe('getContentType', () => {
     it('should return "empty" for empty clipboard', async () => {
-      clipboardy.read.mockResolvedValue('')
+      mockClipboardy.read.mockResolvedValue('')
 
       const result = await clipboardManager.getContentType()
 
@@ -143,7 +138,7 @@ describe('ClipboardManager', () => {
 
     it('should return "image" for base64 image data', async () => {
       const dataUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJ'
-      clipboardy.read.mockResolvedValue(dataUrl)
+      mockClipboardy.read.mockResolvedValue(dataUrl)
 
       const result = await clipboardManager.getContentType()
 
@@ -151,7 +146,7 @@ describe('ClipboardManager', () => {
     })
 
     it('should return "text" for regular text', async () => {
-      clipboardy.read.mockResolvedValue('Hello, World!')
+      mockClipboardy.read.mockResolvedValue('Hello, World!')
 
       const result = await clipboardManager.getContentType()
 
@@ -160,7 +155,7 @@ describe('ClipboardManager', () => {
 
     it('should return "binary" for binary data', async () => {
       const binaryData = '\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E\x0F'
-      clipboardy.read.mockResolvedValue(binaryData)
+      mockClipboardy.read.mockResolvedValue(binaryData)
 
       const result = await clipboardManager.getContentType()
 

@@ -93,6 +93,9 @@ npm link
 - **macOS**: No additional requirements
 - **Windows**: No additional requirements  
 - **Linux**: Requires `xclip` or `xsel`
+- **Node.js**: >=16 (tested on 16, 18, 20, 22). Recommended: Active LTS (20). Older Node 14 is no longer supported.
+
+> Note: The project depends on the ESM-only `clipboardy` package. In this CommonJS codebase it's loaded via dynamic `import()` internally—no action needed from the user.
 
 ```bash
 # Ubuntu/Debian

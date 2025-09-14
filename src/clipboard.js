@@ -1,8 +1,23 @@
-const clipboardy = require('clipboardy').default
+// clipboardy v3+ is ESM-only. In a CommonJS project we must use dynamic import().
+// We'll lazy load it once and cache the reference.
+let _clipboardyPromise = null
+let _injectedClipboardy = null // for tests / dependency injection
+async function getClipboardy () {
+  if (_injectedClipboardy) return _injectedClipboardy
+  if (!_clipboardyPromise) {
+    _clipboardyPromise = import('clipboardy')
+      .then(mod => mod.default || mod)
+      .catch(err => {
+        throw new Error(`Failed to load clipboardy: ${err.message}`)
+      })
+  }
+  return _clipboardyPromise
+}
 
 class ClipboardManager {
   async hasContent () {
     try {
+      const clipboardy = await getClipboardy()
       const content = await clipboardy.read()
       return content != null && content.length > 0
     } catch (error) {
@@ -12,6 +27,7 @@ class ClipboardManager {
 
   async readText () {
     try {
+      const clipboardy = await getClipboardy()
       const content = await clipboardy.read()
       return content
     } catch (error) {
@@ -21,6 +37,7 @@ class ClipboardManager {
 
   async writeText (content) {
     try {
+      const clipboardy = await getClipboardy()
       await clipboardy.write(content)
       return true
     } catch (error) {
@@ -30,6 +47,7 @@ class ClipboardManager {
 
   async clear () {
     try {
+      const clipboardy = await getClipboardy()
       await clipboardy.write('')
       return true
     } catch (error) {
@@ -39,6 +57,7 @@ class ClipboardManager {
 
   async readImage () {
     try {
+      const clipboardy = await getClipboardy()
       const content = await clipboardy.read()
 
       // Check if content looks like base64 image data
@@ -94,6 +113,7 @@ class ClipboardManager {
 
   async getContentType () {
     try {
+      const clipboardy = await getClipboardy()
       const content = await clipboardy.read()
 
       if (!content || content.length === 0) {
@@ -140,3 +160,4 @@ class ClipboardManager {
 }
 
 module.exports = ClipboardManager
+module.exports.__setMockClipboardy = (mock) => { _injectedClipboardy = mock }
