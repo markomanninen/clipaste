@@ -209,10 +209,23 @@ clipaste paste --output ./backup/
 # Image handling
 # (Copy image in GUI first, then:)
 clipaste paste --format png --filename "screenshot"
+clipaste paste --resize 1280x      # width only, keeps aspect
+clipaste paste --resize x720       # height only, keeps aspect
+clipaste paste --resize 800x600    # fit inside 800x600
 
 # Integration with other tools
 clipaste get | jq .  # Format JSON from clipboard
 ls | clipaste copy   # Copy directory listing
+
+# Transformations
+clipaste get --url-encode           # Percent-encode clipboard text
+clipaste get --url-decode           # Decode percent-encoded text
+clipaste get --base64               # Base64-encode clipboard text to stdout
+clipaste copy --encode-base64 "hi"   # Encode to base64 and copy
+clipaste copy --decode-base64 "aGk=" # Decode from base64 and copy
+
+# Auto extension for text/image on paste
+clipaste paste --auto-extension --filename note   # picks .json/.md/.sh/.js/.txt
 ```
 
 ### Watch and History
