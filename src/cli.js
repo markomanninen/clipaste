@@ -1055,9 +1055,8 @@ class CLI {
   }
 
   async prepareRedaction (text, options = {}) {
-    const disable = options.redact === false
     const rules = typeof options.redact === 'string' ? options.redact : undefined
-    const result = await this.aiManager.applyRedaction(text, { enabled: disable ? false : undefined, rules })
+    const result = await this.aiManager.applyRedaction(text, { enabled: options.redact !== false, rules })
     return result
   }
 
