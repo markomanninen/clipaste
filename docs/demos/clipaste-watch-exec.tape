@@ -1,7 +1,7 @@
 Output docs/demos/clipaste-watch-exec.gif
 Set FontSize 14
-Set Width 80
-Set Height 24
+Set Width 800
+Set Height 480
 Set Theme "Dracula"
 
 # Clean previous artifacts
@@ -27,4 +27,3 @@ Sleep 800ms
 Type "clipaste history --list | tail -n 1"
 Enter
 Sleep 1s
-

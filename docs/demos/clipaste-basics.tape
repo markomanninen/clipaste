@@ -1,7 +1,7 @@
 Output docs/demos/clipaste-basics.gif
 Set FontSize 14
-Set Width 80
-Set Height 24
+Set Width 800
+Set Height 480
 Set Theme "Dracula"
 
 Type "clipaste status"
@@ -19,4 +19,3 @@ Sleep 800ms
 Type "clipaste paste --dry-run --filename demo"
 Enter
 Sleep 1200ms
-
