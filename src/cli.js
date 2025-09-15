@@ -4,29 +4,7 @@ const FileHandler = require('./fileHandler')
 const Watcher = require('./watcher')
 const HistoryStore = require('./historyStore')
 const { version } = require('../package.json')
-
-// Helper function to detect headless environment
-function isHeadlessEnvironment () {
-  // Check for various CI/headless indicators
-  // On Windows, DISPLAY might not be set even in GUI environments, so don't check it
-  if (process.platform === 'win32') {
-    return !!(
-      process.env.CI ||
-      process.env.HEADLESS ||
-      process.env.XVFB_RUN ||
-      process.argv.includes('--headless')
-    )
-  }
-
-  // On Unix-like systems, DISPLAY is a good indicator
-  return !!(
-    process.env.CI ||
-    process.env.HEADLESS ||
-    !process.env.DISPLAY ||
-    process.env.XVFB_RUN ||
-    process.argv.includes('--headless')
-  )
-}
+const { isHeadlessEnvironment } = require('./utils/environment')
 
 class CLI {
   constructor () {

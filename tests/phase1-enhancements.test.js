@@ -2,6 +2,7 @@ const { spawn } = require('child_process')
 const fs = require('fs').promises
 const path = require('path')
 const os = require('os')
+const { expectClipboardContent, expectBackupContent, setupClipboardTest } = require('./helpers/clipboardTestUtils')
 
 // Phase 1 Enhancement Tests - REAL functionality tests (no mocking)
 describe('Phase 1 Enhancement Tests - REAL Tests', () => {
@@ -64,13 +65,8 @@ describe('Phase 1 Enhancement Tests - REAL Tests', () => {
       const getResult = await runCLI(['get'])
       expect(getResult.code).toBe(0)
 
-      // Check if clipboard operations work in this environment
-      if (getResult.stdout.trim() === '') {
-        console.warn('Info: Copy command test - clipboard access unavailable in headless/CI environment')
-        return // Skip the rest of the test in headless environments
-      }
-
-      expect(getResult.stdout.trim()).toBe(testText)
+      // Check clipboard content with environment-aware assertion
+      expectClipboardContent(getResult.stdout.trim(), testText, 'copy command test')
     })
 
     it('should copy file contents to clipboard', async () => {
@@ -98,13 +94,7 @@ describe('Phase 1 Enhancement Tests - REAL Tests', () => {
       } while (getResult.stdout.trim() === '' && attempts < maxAttempts)
 
       expect(getResult.code).toBe(0)
-      if (getResult.stdout.trim() === '') {
-        // In headless environments, clipboard file operations may not work reliably
-        // This is expected behavior, not a test failure
-        console.warn('Info: File copy test skipped - clipboard unavailable in headless environment')
-      } else {
-        expect(getResult.stdout.trim()).toBe(fileContent)
-      }
+      expectClipboardContent(getResult.stdout.trim(), fileContent, 'file copy test')
     })
 
     it('should handle copying non-existent file gracefully', async () => {
@@ -150,12 +140,7 @@ describe('Phase 1 Enhancement Tests - REAL Tests', () => {
       // Then get it
       const result = await runCLI(['get'])
       expect(result.code).toBe(0)
-      if (result.stdout.trim() === '') {
-        // Headless CI environments or restricted clipboard access
-        console.warn('Info: Get command test - clipboard access unavailable in headless/CI environment')
-      } else {
-        expect(result.stdout.trim()).toBe(testContent)
-      }
+      expectClipboardContent(result.stdout.trim(), testContent, 'get command test')
     })
 
     it('should output raw content without newline when --raw flag is used', async () => {
@@ -214,10 +199,7 @@ describe('Phase 1 Enhancement Tests - REAL Tests', () => {
   })
 
   describe('Enhanced Clear Command - REAL Tests', () => {
-    beforeEach(async () => {
-      // Ensure clipboard has content before each test
-      await runCLI(['copy', 'Test content to clear'])
-    })
+    beforeEach(setupClipboardTest(runCLI, 'Test content to clear'))
 
     it('should clear clipboard content', async () => {
       // Verify clipboard has (or attempts to have) content
@@ -273,8 +255,7 @@ describe('Phase 1 Enhancement Tests - REAL Tests', () => {
         expect(backupFiles.length).toBeGreaterThan(0)
 
         // Verify backup content
-        const backupContent = await fs.readFile(path.join(testDir, backupFiles[0]), 'utf8')
-        expect(backupContent).toBe('Test content to clear')
+        await expectBackupContent(path.join(testDir, backupFiles[0]), 'Test content to clear', 'backup clipboard content test')
       }
     })
 
