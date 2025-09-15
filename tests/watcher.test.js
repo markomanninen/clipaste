@@ -164,6 +164,14 @@ describe('Watcher', () => {
     await watcher.start({ save: true, history, timeout: 200 })
     // Wait for timeout to trigger
     await new Promise(resolve => setTimeout(resolve, 300))
+
+    // Wait for watcher to fully stop (check multiple times if needed)
+    let stopCheckCount = 0
+    while (!watcher._stopped && stopCheckCount < 10) {
+      await new Promise(resolve => setTimeout(resolve, 50))
+      stopCheckCount++
+    }
+
     const countAfterTimeout = history.addEntry.mock.calls.length
 
     // Wait longer; count should not increase after stop
