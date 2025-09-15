@@ -209,10 +209,23 @@ clipaste paste --output ./backup/
 # Image handling
 # (Copy image in GUI first, then:)
 clipaste paste --format png --filename "screenshot"
+clipaste paste --resize 1280x      # width only, keeps aspect
+clipaste paste --resize x720       # height only, keeps aspect
+clipaste paste --resize 800x600    # fit inside 800x600
 
 # Integration with other tools
 clipaste get | jq .  # Format JSON from clipboard
 ls | clipaste copy   # Copy directory listing
+
+# Transformations
+clipaste get --url-encode           # Percent-encode clipboard text
+clipaste get --url-decode           # Decode percent-encoded text
+clipaste get --base64               # Base64-encode clipboard text to stdout
+clipaste copy --encode-base64 "hi"   # Encode to base64 and copy
+clipaste copy --decode-base64 "aGk=" # Decode from base64 and copy
+
+# Auto extension for text/image on paste
+clipaste paste --auto-extension --filename note   # picks .json/.md/.sh/.js/.txt
 ```
 
 ### Watch and History
@@ -285,6 +298,7 @@ npm run test:docker      # Test in Docker Ubuntu environment
 ### Cross-Platform Testing
 
 **Docker Testing (Linux/Headless environment):**
+
 ```bash
 # Build test environment
 docker build -f scripts/Dockerfile.test -t clipaste-test .
@@ -297,6 +311,7 @@ docker run --rm clipaste-test /bin/bash -c "npm test"
 ```
 
 **Platform-specific commands:**
+
 ```bash
 # Windows (PowerShell)
 npm run test:pre-commit
@@ -363,3 +378,29 @@ tests/
 ## License
 
 MIT
+
+## Phase 3 features
+
+Captions below each demo. To render locally: run `npm run demo:render` or `vhs docs/demos/<tape-name>.tape`.
+
+### 1. JSON/URL/Base64 Transforms
+
+- Caption: Encode/decode URL and Base64, and pretty-print JSON directly from the clipboard.
+- Demo: docs/demos/clipaste-phase3-transforms.gif
+
+### 2. Auto Extension for Text Paste
+
+- Caption: Auto-detect file extension (.json/.md/.sh/.js) when pasting text.
+- Demo: docs/demos/clipaste-phase3-auto-extension.gif
+
+### 3. Image Paste with Resize/Format
+
+- Caption: Paste a base64 image from clipboard, resize on save, and convert format.
+- Demo: docs/demos/clipaste-phase3-image-resize.gif
+
+## Roadmap and Plans
+
+- Phase 1-4 overview: ENHANCEMENT_PLAN.md
+- Phase 2 (refined): ENHANCEMENT_PLAN_PHASE_2.md
+- Phase 3 (integration features): ENHANCEMENT_PLAN_PHASE_3.md
+- Phase 3B (copy image to clipboard): ENHANCEMENT_PLAN_PHASE_3B.md

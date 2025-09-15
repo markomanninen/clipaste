@@ -2,6 +2,7 @@ const fs = require('fs').promises
 const path = require('path')
 const { v4: uuidv4 } = require('uuid')
 const sharp = require('sharp')
+const { parseResizeSpec, extensionForTextContent } = require('./utils/transform')
 
 class FileHandler {
   constructor () {
@@ -33,7 +34,8 @@ class FileHandler {
       filename,
       extension,
       format = 'png',
-      quality = 90
+      quality = 90,
+      resize
     } = options
 
     const imageExtension = extension || `.${format}`
@@ -46,7 +48,32 @@ class FileHandler {
 
       // If it's a Buffer, process with sharp
       if (Buffer.isBuffer(imageData)) {
-        const sharpInstance = sharp(imageData)
+        let sharpInstance = sharp(imageData)
+
+        // Apply optional resize if provided
+        if (resize) {
+          let resizeOpts = null
+
+          if (typeof resize === 'string') {
+            resizeOpts = parseResizeSpec(resize)
+          } else if (typeof resize === 'object' && resize !== null) {
+            // Validate non-string resize options
+            const { width, height } = resize
+            if ((width && typeof width === 'number' && width > 0) ||
+                (height && typeof height === 'number' && height > 0)) {
+              resizeOpts = { width, height }
+            }
+          }
+
+          if (resizeOpts && (resizeOpts.width || resizeOpts.height)) {
+            sharpInstance = sharpInstance.resize({
+              width: resizeOpts.width,
+              height: resizeOpts.height,
+              fit: 'inside',
+              withoutEnlargement: true
+            })
+          }
+        }
 
         switch (format.toLowerCase()) {
           case 'jpeg':
@@ -69,6 +96,10 @@ class FileHandler {
     } catch (error) {
       throw new Error(`Failed to save image file: ${error.message}`)
     }
+  }
+
+  chooseTextExtension (text) {
+    return extensionForTextContent(text) || this.defaultTextExtension
   }
 
   generateFilePath (outputPath, filename, extension) {

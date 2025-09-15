@@ -30,6 +30,8 @@ class CLI {
       .option('--format <format>', 'Image format (png|jpg|webp)', 'png')
       .option('--quality <number>', 'Image quality (1-100)', '90')
       .option('--ext <extension>', 'File extension override')
+      .option('--resize <WxH|Wx|xH>', 'Resize image on paste (preserve aspect)')
+      .option('--auto-extension', 'Auto-detect file extension for text/image')
       .option('--dry-run', 'Show what would be done without saving')
       .action(async (options) => {
         await this.handlePaste(options)
@@ -59,6 +61,8 @@ class CLI {
       .description('Copy content to clipboard')
       .argument('[text]', 'Text to copy to clipboard')
       .option('--file <path>', 'Copy file contents to clipboard')
+      .option('--decode-base64 <data>', 'Decode base64 to text and copy (stdin if present)')
+      .option('--encode-base64 [data]', 'Encode input to base64 and copy (stdin if present)')
       .action(async (text, options) => {
         await this.handleCopy(text, options)
       })
@@ -68,6 +72,11 @@ class CLI {
       .command('get')
       .description('Output clipboard content to stdout')
       .option('--raw', 'Output raw content without processing')
+      .option('--base64', 'Encode text content as base64')
+      .option('--json-format', 'Pretty-print JSON content')
+      .option('--url-decode', 'Decode URL-encoded content')
+      .option('--url-encode', 'URL-encode content')
+      .option('--image-info', 'Output image metadata JSON if clipboard has an image')
       .action(async (options) => {
         await this.handleGet(options)
       })
@@ -121,11 +130,23 @@ class CLI {
       const contentType = options.type || await this.clipboardManager.getContentType()
 
       if (options.dryRun) {
+        const extForDryRun = (() => {
+          if (options.ext) return options.ext
+          if (options.autoExtension) {
+            if (contentType === 'image') {
+              return this.fileHandler.getFileExtensionFromFormat(options.format || 'png')
+            } else {
+              return '.txt'
+            }
+          }
+          return contentType === 'image' ? '.png' : '.txt'
+        })()
+
         console.log(`Would paste ${contentType} content to:`,
           this.fileHandler.generateFilePath(
             options.output,
             options.filename,
-            options.ext || (contentType === 'image' ? '.png' : '.txt')
+            extForDryRun
           )
         )
         return
@@ -143,16 +164,17 @@ class CLI {
         filePath = await this.fileHandler.saveImage(imageData.data, {
           outputPath: options.output,
           filename: options.filename,
-          extension: options.ext,
+          extension: options.ext || (options.autoExtension ? this.fileHandler.getFileExtensionFromFormat(options.format || imageData.format || 'png') : undefined),
           format: options.format,
-          quality: parseInt(options.quality)
+          quality: parseInt(options.quality),
+          resize: options.resize
         })
       } else {
         const textContent = await this.clipboardManager.readText()
         filePath = await this.fileHandler.saveText(textContent, {
           outputPath: options.output,
           filename: options.filename,
-          extension: options.ext
+          extension: options.ext || (options.autoExtension ? this.fileHandler.chooseTextExtension(textContent) : undefined)
         })
       }
 
@@ -262,6 +284,46 @@ class CLI {
     try {
       const isHeadless = isHeadlessEnvironment()
 
+      if (options.decodeBase64 != null || options.encodeBase64 != null) {
+        const chunks = []
+        const readFromStdin = (process.stdin && process.stdin.isTTY === false)
+        const getInput = async () => {
+          if (readFromStdin) {
+            return await new Promise((resolve) => {
+              process.stdin.setEncoding('utf8')
+              process.stdin.on('data', (c) => chunks.push(c))
+              process.stdin.on('end', () => resolve(chunks.join('')))
+            })
+          }
+          if (options.decodeBase64 != null) return String(options.decodeBase64)
+          if (options.encodeBase64 != null) return options.encodeBase64 === true ? String(text || '') : String(options.encodeBase64)
+          return ''
+        }
+
+        const input = await getInput()
+        let transformed
+        try {
+          if (options.decodeBase64 != null) {
+            const { base64Decode } = require('./utils/transform')
+            transformed = base64Decode(input)
+          } else {
+            const { base64Encode } = require('./utils/transform')
+            transformed = base64Encode(input)
+          }
+        } catch (e) {
+          console.error(options.decodeBase64 != null ? 'Invalid base64 input' : 'Encoding error')
+          process.exit(1)
+        }
+
+        await this.clipboardManager.writeText(transformed)
+        if (isHeadless) {
+          console.log(`Copied text to clipboard (${transformed.length} characters) (headless mode - simulated)`)
+        } else {
+          console.log(`Copied text to clipboard (${transformed.length} characters)`)
+        }
+        return
+      }
+
       if (options.file) {
         // Copy file contents
         const fs = require('fs').promises
@@ -329,17 +391,52 @@ class CLI {
     try {
       const hasContent = await this.clipboardManager.hasContent()
       if (!hasContent) {
-        // Don't output anything if clipboard is empty, just like pbpaste
         process.exit(0)
       }
 
-      const content = await this.clipboardManager.readText()
-
-      if (options.raw) {
-        process.stdout.write(content)
-      } else {
-        console.log(content)
+      if (options.imageInfo) {
+        const img = await this.clipboardManager.readImage()
+        if (img && img.data) {
+          const { imageMetadataFromBuffer } = require('./utils/transform')
+          const meta = await imageMetadataFromBuffer(img.data)
+          const payload = { format: img.format || meta.format, width: meta.width, height: meta.height, sizeBytes: meta.sizeBytes }
+          const out = JSON.stringify(payload)
+          if (options.raw) process.stdout.write(out)
+          else console.log(out)
+          return
+        }
+        // fallthrough to text if no image
       }
+
+      const text = await this.clipboardManager.readText()
+      let output = text
+
+      if (options.jsonFormat) {
+        const { jsonPretty } = require('./utils/transform')
+        try {
+          output = jsonPretty(text)
+        } catch (e) {
+          console.error('Invalid JSON input')
+          process.exit(1)
+        }
+      } else if (options.urlDecode) {
+        const { urlDecode } = require('./utils/transform')
+        try {
+          output = urlDecode(text)
+        } catch (e) {
+          console.error('Invalid URL-encoded input')
+          process.exit(1)
+        }
+      } else if (options.urlEncode) {
+        const { urlEncode } = require('./utils/transform')
+        output = urlEncode(text)
+      } else if (options.base64) {
+        const { base64Encode } = require('./utils/transform')
+        output = base64Encode(text)
+      }
+
+      if (options.raw) process.stdout.write(output)
+      else console.log(output)
     } catch (error) {
       console.error('Error reading from clipboard:', error.message)
       process.exit(1)
