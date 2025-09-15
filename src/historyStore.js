@@ -47,7 +47,20 @@ class HistoryStore {
       await this._ensureDir()
       const raw = await fs.readFile(this.file, 'utf8')
       const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed)) this._data = parsed
+      if (Array.isArray(parsed)) {
+        // Validate each entry to avoid prototype pollution and unexpected data
+        this._data = parsed.filter(e => {
+          return e && typeof e === 'object' &&
+            typeof e.id === 'string' &&
+            typeof e.ts === 'string' &&
+            typeof e.content === 'string' &&
+            typeof e.sha256 === 'string' &&
+            typeof e.len === 'number' &&
+            typeof e.preview === 'string'
+        })
+      } else {
+        this._data = []
+      }
     } catch {
       this._data = []
     } finally {
@@ -63,8 +76,7 @@ class HistoryStore {
   }
 
   _preview (content) {
-    const slice = content.slice(0, Math.min(1024, content.length))
-    return slice
+    return content.slice(0, 1024)
   }
 
   _totalSize () {

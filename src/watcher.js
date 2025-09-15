@@ -99,14 +99,9 @@ class Watcher {
       }
     }
 
-    const tickLoop = async () => {
-      if (this._stopped) return;
-      await onTick();
-      if (!this._stopped) {
-        this._timer = setTimeout(tickLoop, this.interval);
-      }
-    };
-    tickLoop();
+    this._timer = setInterval(onTick, this.interval)
+    // Immediate first tick
+    onTick()
   }
 
   async stop () {
@@ -130,9 +125,9 @@ class Watcher {
 
   _runExec (cmd, content, hash) {
     return new Promise((resolve) => {
-      const isWindows = process.platform === 'win32';
-      const shell = isWindows ? 'cmd' : 'sh';
-      const shellFlag = isWindows ? '/c' : '-c';
+      const isWindows = process.platform === 'win32'
+      const shell = isWindows ? 'cmd' : 'sh'
+      const shellFlag = isWindows ? '/c' : '-c'
       const child = spawn(shell, [shellFlag, cmd], {
         env: {
           ...process.env,
