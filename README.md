@@ -397,3 +397,10 @@ Captions below each demo. To render locally: run `npm run demo:render` or `vhs d
 
 - Caption: Paste a base64 image from clipboard, resize on save, and convert format.
 - Demo: docs/demos/clipaste-phase3-image-resize.gif
+
+## Roadmap and Plans
+
+- Phase 1-4 overview: ENHANCEMENT_PLAN.md
+- Phase 2 (refined): ENHANCEMENT_PLAN_PHASE_2.md
+- Phase 3 (integration features): ENHANCEMENT_PLAN_PHASE_3.md
+- Phase 3B (copy image to clipboard): ENHANCEMENT_PLAN_PHASE_3B.md
