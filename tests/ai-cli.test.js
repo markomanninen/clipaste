@@ -2,6 +2,11 @@ jest.mock('../src/clipboard', () => jest.fn())
 jest.mock('../src/fileHandler', () => jest.fn())
 jest.mock('../src/ai/manager', () => jest.fn())
 
+<<<<<<< HEAD
+=======
+const path = require('path')
+const fs = require('fs')
+>>>>>>> 7bb233b (Add AI plugin commands and local provider)
 const CLI = require('../src/cli')
 const ClipboardManager = require('../src/clipboard')
 const FileHandler = require('../src/fileHandler')
@@ -73,4 +78,70 @@ describe('CLI AI commands', () => {
     expect(parsed.redaction).toBeDefined()
     expect(errorSpy).not.toHaveBeenCalled()
   })
+<<<<<<< HEAD
+=======
+
+  it('transform handles file source with disabled redaction and writes output to file', async () => {
+    const filePath = path.join(process.cwd(), 'example.txt')
+    const readSpy = jest.spyOn(fs.promises, 'readFile').mockResolvedValue('file contents with email test@example.com')
+    const mkdirSpy = jest.spyOn(fs.promises, 'mkdir').mockResolvedValue()
+    const writeSpy = jest.spyOn(fs.promises, 'writeFile').mockResolvedValue()
+
+    mockAiManager.applyRedaction.mockResolvedValue({ text: 'file contents with email [REDACTED_EMAIL]', appliedRules: ['emails'], redactions: [{ rule: 'emails', matches: 1 }] })
+    mockAiManager.runPrompt.mockResolvedValue({ text: 'transformed text', meta: { provider: 'ollama', model: 'llama3.2:1b' } })
+
+    await cli.handleAiTransform({
+      source: 'file',
+      file: filePath,
+      instruction: 'rewrite nicely',
+      redact: false,
+      showRedacted: true,
+      out: path.join(process.cwd(), 'out/result.txt'),
+      copy: true,
+      json: true,
+      consent: true
+    })
+
+    expect(readSpy).toHaveBeenCalledWith(path.resolve(filePath), 'utf8')
+    const lastApplyArgs = mockAiManager.applyRedaction.mock.calls[mockAiManager.applyRedaction.mock.calls.length - 1]
+    expect(lastApplyArgs[0]).toContain('email')
+    expect(lastApplyArgs[1]).toEqual({ enabled: false, rules: undefined })
+    expect(mockAiManager.runPrompt).toHaveBeenCalledWith(expect.objectContaining({
+      prompt: expect.stringContaining('rewrite nicely')
+    }))
+    expect(writeSpy).toHaveBeenCalledWith(expect.stringContaining('out/result.txt'), 'transformed text', 'utf8')
+    expect(mockClipboard.writeText).toHaveBeenCalledWith('transformed text')
+    expect(errorSpy).toHaveBeenCalledWith('Copied AI output to clipboard')
+    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Wrote AI output to:'))
+
+    readSpy.mockRestore()
+    mkdirSpy.mockRestore()
+    writeSpy.mockRestore()
+  })
+
+  it('readAiSource throws helpful errors for unsupported sources', async () => {
+    const originalStdin = process.stdin
+    const originalIsTTY = process.stdin && Object.prototype.hasOwnProperty.call(process.stdin, 'isTTY') ? process.stdin.isTTY : undefined
+    if (process.stdin) {
+      Object.defineProperty(process.stdin, 'isTTY', { value: true, configurable: true })
+    }
+    await expect(cli.readAiSource({ source: 'stdin' })).rejects.toThrow('No stdin content available')
+    if (process.stdin) {
+      if (originalIsTTY === undefined) {
+        delete process.stdin.isTTY
+      } else {
+        Object.defineProperty(process.stdin, 'isTTY', { value: originalIsTTY, configurable: true })
+      }
+    }
+    process.stdin = originalStdin
+
+    await expect(cli.readAiSource({ source: 'file' })).rejects.toThrow('Provide --file <path> when using file source')
+    await expect(cli.readAiSource({ source: 'unknown' })).rejects.toThrow("Unknown source 'unknown'")
+  })
+
+  it('prepareRedaction forwards custom rule strings', async () => {
+    await cli.prepareRedaction('content', { redact: 'emails' })
+    expect(mockAiManager.applyRedaction).toHaveBeenCalledWith('content', { enabled: undefined, rules: 'emails' })
+  })
+>>>>>>> 7bb233b (Add AI plugin commands and local provider)
 })

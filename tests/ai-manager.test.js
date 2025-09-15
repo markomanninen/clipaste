@@ -66,4 +66,38 @@ describe('AIManager', () => {
     expect(res.text).toBe('cloud-ok')
     expect(res.meta.model).toBe('cloud-model')
   })
+<<<<<<< HEAD
+=======
+
+  it('throws when provider is unknown', async () => {
+    const configStore = new ConfigStore({ defaults: { ai: { defaultProvider: 'ollama' } } })
+    const manager = new AIManager({ configStore })
+    await expect(manager.runPrompt({ prompt: 'test', provider: 'missing' })).rejects.toThrow(/AI provider 'missing' is not available/)
+  })
+
+  it('requires prompt input', async () => {
+    const configStore = new ConfigStore({ defaults: { ai: { defaultProvider: 'ollama' } } })
+    const manager = new AIManager({ configStore })
+    await expect(manager.runPrompt({ prompt: '' })).rejects.toThrow('Prompt is required')
+  })
+
+  it('applyRedaction honors config defaults and overrides', async () => {
+    const configStore = new ConfigStore({
+      defaults: {
+        ai: {
+          redaction: {
+            enabled: false,
+            rules: ['keys']
+          }
+        }
+      }
+    })
+    const manager = new AIManager({ configStore })
+    const disabled = await manager.applyRedaction('secret', {})
+    expect(disabled.text).toBe('secret')
+
+    const overridden = await manager.applyRedaction('user@example.com key', { rules: 'emails', enabled: true })
+    expect(overridden.text).toContain('[REDACTED_EMAIL]')
+  })
+>>>>>>> 7bb233b (Add AI plugin commands and local provider)
 })
