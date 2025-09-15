@@ -272,6 +272,11 @@ npm run test:coverage
 
 # Run tests in watch mode
 npm run test:watch
+
+# CI environment testing
+npm run test:ci-sim      # Simulate CI environment
+npm run test:ci-check    # Check CI protections
+npm run test:docker      # Test in Docker Ubuntu environment
 ```
 
 > Note: `clipboardy` is ESM-only. The library is loaded via a lazy dynamic `import()` inside `src/clipboard.js`. Real functionality and smoke tests that directly exercise the dependency spawn child Node processes and also use dynamic `import()` to validate availability without converting the whole project to ESM.
