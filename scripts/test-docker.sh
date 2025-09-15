@@ -1,7 +1,8 @@
 #!/bin/bash
 
 echo "Building Docker test image for Ubuntu Node 16..."
-docker build -f Dockerfile.test -t clipaste-test-ubuntu-node16 .
+docker build -f scripts/Dockerfile.test -t clipaste-test-ubuntu-node16 .
+#docker build -f Dockerfile.test -t clipaste-test-ubuntu-node16 .
 
 if [ $? -ne 0 ]; then
     echo "Docker build failed!"

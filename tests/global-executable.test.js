@@ -15,8 +15,9 @@ describe('Global Executable Tests', () => {
       await new Promise((resolve, reject) => {
         const command = process.platform === 'win32' ? 'where clipaste' : 'which clipaste'
         exec(command, { timeout: 3000 }, (error, stdout) => {
-          if (error) reject(error)
-          else {
+          if (error) {
+            reject(error)
+          } else {
             isGloballyInstalled = true
             resolve(stdout)
           }
@@ -82,23 +83,33 @@ describe('Global Executable Tests', () => {
       expect(true).toBe(true)
     })
 
-    const testMethod = isGloballyInstalled ? it : it.skip
+    it('should show help when globally executed', async () => {
+      if (!isGloballyInstalled) {
+        return
+      }
 
-    testMethod('should show help when globally executed', async () => {
       const result = await runGlobalCommand(testDir, ['--help'])
 
       expect(result.code).toBe(0)
       expect(result.stdout).toContain('CLI tool to paste clipboard content to files')
     }, 10000)
 
-    testMethod('should show version when globally executed', async () => {
+    it('should show version when globally executed', async () => {
+      if (!isGloballyInstalled) {
+        return
+      }
+
       const result = await runGlobalCommand(testDir, ['--version'])
 
       expect(result.code).toBe(0)
       expect(result.stdout).toContain(version)
     }, 10000)
 
-    testMethod('should work from different directories', async () => {
+    it('should work from different directories', async () => {
+      if (!isGloballyInstalled) {
+        return
+      }
+
       const subDir = path.join(testDir, 'subdir')
       await fs.mkdir(subDir, { recursive: true })
 
@@ -114,14 +125,22 @@ describe('Global Executable Tests', () => {
       expect(result1.stdout).not.toContain('subdir')
     }, 10000)
 
-    testMethod('should handle status command from any directory', async () => {
+    it('should handle status command from any directory', async () => {
+      if (!isGloballyInstalled) {
+        return
+      }
+
       const result = await runGlobalCommand(testDir, ['status'])
 
       // Should work even if clipboard is empty (exit code 0 or 1)
       expect([0, 1]).toContain(result.code)
     }, 10000)
 
-    testMethod('should handle dry-run from different working directories', async () => {
+    it('should handle dry-run from different working directories', async () => {
+      if (!isGloballyInstalled) {
+        return
+      }
+
       const subDir = path.join(testDir, 'dryrun-test')
       await fs.mkdir(subDir, { recursive: true })
 
@@ -137,9 +156,11 @@ describe('Global Executable Tests', () => {
   })
 
   describe('Path resolution with global command', () => {
-    const testMethod = isGloballyInstalled ? it : it.skip
+    it('should resolve relative paths correctly from working directory', async () => {
+      if (!isGloballyInstalled) {
+        return
+      }
 
-    testMethod('should resolve relative paths correctly from working directory', async () => {
       const workDir = path.join(testDir, 'path-test')
       await fs.mkdir(workDir, { recursive: true })
       await fs.mkdir(path.join(workDir, 'output'), { recursive: true })
@@ -157,7 +178,11 @@ describe('Global Executable Tests', () => {
       }
     }, 10000)
 
-    testMethod('should handle absolute paths from any working directory', async () => {
+    it('should handle absolute paths from any working directory', async () => {
+      if (!isGloballyInstalled) {
+        return
+      }
+
       const workDir = path.join(testDir, 'abs-path-test')
       const outputDir = path.join(testDir, 'abs-output')
 
@@ -179,16 +204,22 @@ describe('Global Executable Tests', () => {
   })
 
   describe('Error handling with global command', () => {
-    const testMethod = isGloballyInstalled ? it : it.skip
+    it('should handle invalid commands gracefully', async () => {
+      if (!isGloballyInstalled) {
+        return
+      }
 
-    testMethod('should handle invalid commands gracefully', async () => {
       const result = await runGlobalCommand(testDir, ['invalid-command'])
 
       expect(result.code).toBe(1)
       expect(result.stderr).toContain('unknown command')
     }, 10000)
 
-    testMethod('should handle invalid options gracefully', async () => {
+    it('should handle invalid options gracefully', async () => {
+      if (!isGloballyInstalled) {
+        return
+      }
+
       const result = await runGlobalCommand(testDir, ['paste', '--invalid-option'])
 
       expect(result.code).toBe(1)
