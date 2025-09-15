@@ -8,6 +8,10 @@
 
 A cross-platform command-line tool for clipboard operations - paste, copy, and manage text and images with file persistence.
 
+![clipaste basics](docs/demos/clipaste-basics.gif)
+
+![clipaste watch exec](docs/demos/clipaste-watch-exec.gif)
+
 ## Why clipaste over pbcopy/pbpaste?
 
 | Feature | pbcopy/pbpaste | clipaste |
@@ -211,6 +215,44 @@ clipaste get | jq .  # Format JSON from clipboard
 ls | clipaste copy   # Copy directory listing
 ```
 
+### Watch and History
+
+Real-time monitoring and opt-in history are available via the `watch` and `history` commands.
+
+```bash
+# Monitor clipboard and print actions (CTRL+C to stop)
+clipaste watch --interval 1000 --verbose
+
+# Only react to matching content and save to history
+clipaste watch --filter "ERROR|WARN" --save
+
+# Run a command when clipboard changes (content on stdin)
+clipaste watch --exec "jq . | tee last.json" --once
+
+# Stop conditions
+clipaste watch --timeout 60000          # stop after 60s
+clipaste watch --max-events 5           # stop after 5 changes
+clipaste watch --idle-timeout 30000     # stop after 30s of no changes
+
+# Privacy and resource controls
+clipaste watch --no-persist             # do not write history to disk
+clipaste watch --max-item-size 262144   # skip items larger than 256 KB
+clipaste watch --max-items 100          # keep up to 100 entries
+clipaste watch --no-echo --verbose      # suppress content previews in logs
+
+# Inspect, restore, and export history
+clipaste history --list
+clipaste history --restore <id>
+clipaste history --export backup.json
+clipaste history --clear
+```
+
+Notes:
+
+- Polling interval has a floor of 200ms (default 1000ms). Very low intervals can use more CPU, especially on Linux.
+- `--exec` receives clipboard content on stdin and exposes env vars `CLIPASTE_TEXT` and `CLIPASTE_SHA256` for scripts.
+- History is text-first by design. Image history is planned for a later phase.
+
 ## Development
 
 ### Install Dependencies
@@ -225,12 +267,50 @@ npm install
 # Run all tests
 npm test
 
+# Run pre-commit tests (recommended for development)
+npm run test:pre-commit
+
 # Run tests with coverage
 npm run test:coverage
 
 # Run tests in watch mode
 npm run test:watch
+
+# CI environment testing
+npm run test:ci-sim      # Simulate CI environment
+npm run test:ci-check    # Check CI protections
+npm run test:docker      # Test in Docker Ubuntu environment
 ```
+
+### Cross-Platform Testing
+
+**Docker Testing (Linux/Headless environment):**
+```bash
+# Build test environment
+docker build -f scripts/Dockerfile.test -t clipaste-test .
+
+# Run pre-commit tests in Docker
+docker run --rm clipaste-test /bin/bash -c "npm run test:pre-commit"
+
+# Run all tests in Docker
+docker run --rm clipaste-test /bin/bash -c "npm test"
+```
+
+**Platform-specific commands:**
+```bash
+# Windows (PowerShell)
+npm run test:pre-commit
+
+# macOS/Linux 
+npm run test:pre-commit
+
+# CI/Docker (headless)
+docker run --rm clipaste-test /bin/bash -c "npm run test:pre-commit"
+```
+
+> 📋 **Headless Environment Support**: Tests automatically detect headless environments (Docker, CI) and gracefully handle clipboard operations with simulated behavior. All tests pass with informational warnings in headless mode.
+
+> 📖 **Detailed Testing Guide**: See [TESTING.md](./TESTING.md) for comprehensive testing instructions including troubleshooting, cross-platform workflows, and CI setup.
 
 > Note: `clipboardy` is ESM-only. The library is loaded via a lazy dynamic `import()` inside `src/clipboard.js`. Real functionality and smoke tests that directly exercise the dependency spawn child Node processes and also use dynamic `import()` to validate availability without converting the whole project to ESM.
 
@@ -260,6 +340,18 @@ tests/
 ├── fileHandler.test.js   # File handler tests
 ├── cli.test.js          # CLI tests
 └── integration.test.js   # End-to-end tests
+
+Additional Phase 2 files:
+
+```text
+src/
+├── watcher.js       # Polling-based clipboard watcher
+└── historyStore.js  # JSON-backed clipboard history with pruning
+
+tests/
+├── watcher.test.js        # Watcher unit tests (filter/exec/stop)
+├── watch-smoke.test.js    # Smoke test writing to temp history.json
+└── cli-watch-history.test.js # CLI wiring tests for new commands
 ```
 
 ## Platform Support

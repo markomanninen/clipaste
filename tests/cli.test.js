@@ -13,38 +13,65 @@ jest.mock('clipboardy', () => ({
 }))
 
 // Mock console methods
-const mockConsole = {
+let mockConsole = {
   log: jest.fn(),
   error: jest.fn()
 }
 
-const mockProcess = {
+let mockProcess = {
   exit: jest.fn(),
   cwd: jest.fn(() => '/current/dir')
 }
+
+// Store original environment
+const originalEnv = process.env
 
 describe('CLI', () => {
   let cli
   let mockClipboardManager
   let mockFileHandler
+  let originalConsole
+  let originalProcess
 
   beforeEach(() => {
-    // Reset mocks
-    ClipboardManager.mockClear()
-    FileHandler.mockClear()
-    jest.clearAllMocks()
+    // Store original globals
+    originalConsole = global.console
+    originalProcess = global.process
 
-    // Setup mocks
+    // Reset environment for tests - assume non-headless by default
+    process.env = { ...originalEnv }
+    delete process.env.CI
+    delete process.env.HEADLESS
+    delete process.env.XVFB_RUN
+    // Ensure DISPLAY is set for Unix-like systems
+    if (process.platform !== 'win32') {
+      process.env.DISPLAY = ':0'
+    }
+
+    // Mock console methods
+    mockConsole = {
+      log: jest.fn(),
+      error: jest.fn(),
+      warn: jest.fn()
+    }
+
+    // Mock process methods
+    mockProcess = {
+      exit: jest.fn()
+    }
+
+    // Mock clipboard manager
     mockClipboardManager = {
       hasContent: jest.fn(),
-      getContentType: jest.fn(),
       readText: jest.fn(),
       readImage: jest.fn(),
       writeText: jest.fn(),
+      getContentType: jest.fn(),
       clear: jest.fn()
     }
     ClipboardManager.mockImplementation(() => mockClipboardManager)
 
+    // Mock file handler
     mockFileHandler = {
       saveText: jest.fn(),
       saveImage: jest.fn(),
@@ -61,6 +88,10 @@ describe('CLI', () => {
   })
 
   afterEach(() => {
+    // Restore original globals
+    global.console = originalConsole
+    global.process = originalProcess
+    process.env = originalEnv
     jest.restoreAllMocks()
   })
 
@@ -167,7 +198,10 @@ describe('CLI', () => {
 
       await cli.handleStatus()
 
-      expect(mockConsole.log).toHaveBeenCalledWith('Clipboard is empty')
+      // Handle both regular and headless mode messages
+      const calls = mockConsole.log.mock.calls
+      expect(calls.length).toBe(1)
+      expect(calls[0][0]).toMatch(/^Clipboard is empty( \(headless mode - simulated\))?$/)
     })
 
     it('should show text content status', async () => {
@@ -225,7 +259,10 @@ describe('CLI', () => {
 
       expect(mockClipboardManager.hasContent).toHaveBeenCalled()
       expect(mockClipboardManager.clear).toHaveBeenCalled()
-      expect(mockConsole.log).toHaveBeenCalledWith('Clipboard cleared')
+      // Handle both regular and headless mode messages
+      const calls = mockConsole.log.mock.calls
+      expect(calls.length).toBe(1)
+      expect(calls[0][0]).toMatch(/^Clipboard cleared( \(headless mode - simulated\))?$/)
     })
 
     it('should handle already empty clipboard', async () => {
@@ -234,7 +271,10 @@ describe('CLI', () => {
       await cli.handleClear()
 
       expect(mockClipboardManager.hasContent).toHaveBeenCalled()
-      expect(mockConsole.log).toHaveBeenCalledWith('Clipboard is already empty')
+      // Handle both regular and headless mode messages
+      const calls = mockConsole.log.mock.calls
+      expect(calls.length).toBe(1)
+      expect(calls[0][0]).toMatch(/^Clipboard is already empty( \(headless mode\))?$/)
     })
 
     it('should handle clear errors', async () => {

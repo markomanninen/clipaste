@@ -1,0 +1,60 @@
+FROM node:16-bullseye
+
+# Install system dependencies for clipboard operations (same as CI)
+RUN apt-get update && apt-get install -y \
+    xvfb \
+    xclip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy source code
+COPY . .
+
+# Set environment variables
+ENV CI=true
+ENV DISPLAY=:99
+
+# Create test script
+RUN echo '#!/bin/bash\n\
+# Start Xvfb\n\
+Xvfb :99 -ac -screen 0 1024x768x24 &\n\
+XVFB_PID=$!\n\
+\n\
+# Wait for Xvfb to start\n\
+sleep 2\n\
+\n\
+echo "Node version: $(node --version)"\n\
+echo "npm version: $(npm --version)"\n\
+echo "OS: $(cat /etc/os-release | grep PRETTY_NAME)"\n\
+echo "Testing clipaste package..."\n\
+\n\
+# Run tests\n\
+xvfb-run -a npm test\n\
+TEST_EXIT_CODE=$?\n\
+\n\
+# Also test with coverage (like CI does)\n\
+echo "\nRunning with coverage..."\n\
+xvfb-run -a npm run test:coverage\n\
+COVERAGE_EXIT_CODE=$?\n\
+\n\
+# Kill Xvfb\n\
+kill $XVFB_PID || true\n\
+\n\
+echo "Test exit code: $TEST_EXIT_CODE"\n\
+echo "Coverage exit code: $COVERAGE_EXIT_CODE"\n\
+\n\
+# Exit with non-zero if either failed\n\
+if [ $TEST_EXIT_CODE -ne 0 ] || [ $COVERAGE_EXIT_CODE -ne 0 ]; then\n\
+    exit 1\n\
+fi' > /app/test-script.sh && chmod +x /app/test-script.sh
+
+# Default command
+CMD ["./test-script.sh"]

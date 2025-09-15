@@ -161,3 +161,5 @@ temp/
 
 # Test files created during development
 clipboard-*.txt
+
+out.txt
