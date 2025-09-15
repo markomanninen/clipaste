@@ -298,6 +298,7 @@ npm run test:docker      # Test in Docker Ubuntu environment
 ### Cross-Platform Testing
 
 **Docker Testing (Linux/Headless environment):**
+
 ```bash
 # Build test environment
 docker build -f scripts/Dockerfile.test -t clipaste-test .
@@ -310,6 +311,7 @@ docker run --rm clipaste-test /bin/bash -c "npm test"
 ```
 
 **Platform-specific commands:**
+
 ```bash
 # Windows (PowerShell)
 npm run test:pre-commit
@@ -376,3 +378,22 @@ tests/
 ## License
 
 MIT
+
+## Phase 3 features
+
+Captions below each demo. To render locally: run `npm run demo:render` or `vhs docs/demos/<tape-name>.tape`.
+
+### 1. JSON/URL/Base64 Transforms
+
+- Caption: Encode/decode URL and Base64, and pretty-print JSON directly from the clipboard.
+- Demo: docs/demos/clipaste-phase3-transforms.gif
+
+### 2. Auto Extension for Text Paste
+
+- Caption: Auto-detect file extension (.json/.md/.sh/.js) when pasting text.
+- Demo: docs/demos/clipaste-phase3-auto-extension.gif
+
+### 3. Image Paste with Resize/Format
+
+- Caption: Paste a base64 image from clipboard, resize on save, and convert format.
+- Demo: docs/demos/clipaste-phase3-image-resize.gif
