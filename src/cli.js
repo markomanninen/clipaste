@@ -1,6 +1,8 @@
 const { Command } = require('commander')
 const ClipboardManager = require('./clipboard')
 const FileHandler = require('./fileHandler')
+const Watcher = require('./watcher')
+const HistoryStore = require('./historyStore')
 const { version } = require('../package.json')
 
 class CLI {
@@ -67,6 +69,43 @@ class CLI {
       .option('--raw', 'Output raw content without processing')
       .action(async (options) => {
         await this.handleGet(options)
+      })
+
+    // Watch command
+    this.program
+      .command('watch')
+      .description('Monitor clipboard changes and act on them')
+      .option('--interval <ms>', 'Polling interval in milliseconds', '1000')
+      .option('--filter <regex>', 'Only act when content matches regex')
+      .option('--exec <cmd>', 'Execute a shell command on change (content on stdin)')
+      .option('--save', 'Save changes to history')
+      .option('--timeout <ms>', 'Stop after this many milliseconds')
+      .option('--once', 'Exit after the first change')
+      .option('--max-events <n>', 'Stop after N changes')
+      .option('--idle-timeout <ms>', 'Stop if no changes for this long (ms)')
+      .option('--no-persist', 'Do not persist history to disk (session-only)')
+      .option('--max-item-size <bytes>', 'Max size per history item (bytes)', '262144')
+      .option('--max-items <n>', 'Max number of history items', '100')
+      .option('--no-echo', 'Do not echo content previews in logs')
+      .option('--verbose', 'Verbose logs')
+      .action(async (options) => {
+        await this.handleWatch(options)
+      })
+
+    // History command
+    this.program
+      .command('history')
+      .description('Manage clipboard history')
+      .option('--list', 'List recent history items')
+      .option('--restore <id>', 'Restore a history item to clipboard by id')
+      .option('--clear', 'Clear history')
+      .option('--export <file>', 'Export history to file')
+      .option('--max-items <n>', 'Max number of history items', '100')
+      .option('--max-item-size <bytes>', 'Max size per history item (bytes)', '262144')
+      .option('--no-persist', 'Do not persist to disk (session-only)')
+      .option('--verbose', 'Verbose logs')
+      .action(async (options) => {
+        await this.handleHistory(options)
       })
   }
 
@@ -273,6 +312,76 @@ class CLI {
       }
     } catch (error) {
       console.error('Error reading from clipboard:', error.message)
+      process.exit(1)
+    }
+  }
+
+  async handleWatch (options) {
+    const interval = parseInt(options.interval)
+    const watcher = new Watcher({ interval, verbose: !!options.verbose })
+    const history = new HistoryStore({
+      persist: options.persist !== false,
+      maxItems: parseInt(options.maxItems),
+      maxItemSize: parseInt(options.maxItemSize),
+      verbose: !!options.verbose
+    })
+
+    const stop = async () => { await watcher.stop() }
+    process.on('SIGINT', stop)
+    process.on('SIGTERM', stop)
+
+    await watcher.start({
+      filter: options.filter,
+      exec: options.exec,
+      save: !!options.save,
+      history,
+      timeout: options.timeout ? parseInt(options.timeout) : undefined,
+      once: !!options.once,
+      maxEvents: options.maxEvents ? parseInt(options.maxEvents) : undefined,
+      idleTimeout: options.idleTimeout ? parseInt(options.idleTimeout) : undefined,
+      noEcho: !!options.noEcho
+    })
+  }
+
+  async handleHistory (options) {
+    const history = new HistoryStore({
+      persist: options.persist !== false,
+      maxItems: parseInt(options.maxItems),
+      maxItemSize: parseInt(options.maxItemSize),
+      verbose: !!options.verbose
+    })
+
+    try {
+      if (options.clear) {
+        await history.clear()
+        console.log('History cleared')
+        return
+      }
+
+      if (options.export) {
+        const file = await history.exportTo(options.export)
+        console.log(`Exported history to: ${file}`)
+        return
+      }
+
+      if (options.restore) {
+        await history.restore(options.restore, this.clipboardManager)
+        console.log(`Restored item ${options.restore} to clipboard`)
+        return
+      }
+
+      // Default to list
+      const items = await history.list()
+      if (!items.length) {
+        console.log('History is empty')
+        return
+      }
+      for (const item of items) {
+        const preview = item.preview && item.preview.length > 60 ? item.preview.slice(0, 60) + '…' : item.preview
+        console.log(`${item.id}  ${item.ts}  len=${item.len}  sha=${item.sha256.slice(0, 8)}  ${JSON.stringify(preview)}`)
+      }
+    } catch (error) {
+      console.error('Error handling history:', error.message)
       process.exit(1)
     }
   }

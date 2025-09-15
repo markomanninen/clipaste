@@ -97,7 +97,7 @@ Use conventional commits format:
 
 Examples:
 
-```
+```text
 feat: add clipboard history command
 fix: handle empty clipboard gracefully  
 docs: update installation instructions
