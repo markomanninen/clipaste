@@ -339,7 +339,7 @@ class CLI {
       once: !!options.once,
       maxEvents: options.maxEvents ? parseInt(options.maxEvents) : undefined,
       idleTimeout: options.idleTimeout ? parseInt(options.idleTimeout) : undefined,
-      noEcho: !!options.noEcho
+      noEcho: options.echo === false
     })
   }
 
