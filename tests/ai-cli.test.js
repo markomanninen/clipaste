@@ -104,7 +104,8 @@ describe('CLI AI commands', () => {
     expect(mockAiManager.runPrompt).toHaveBeenCalledWith(expect.objectContaining({
       prompt: expect.stringContaining('rewrite nicely')
     }))
-    expect(writeSpy).toHaveBeenCalledWith(expect.stringContaining('out/result.txt'), 'transformed text', 'utf8')
+    const expectedOutPath = path.join(process.cwd(), 'out', 'result.txt')
+    expect(writeSpy).toHaveBeenCalledWith(expectedOutPath, 'transformed text', 'utf8')
     expect(mockClipboard.writeText).toHaveBeenCalledWith('transformed text')
     expect(errorSpy).toHaveBeenCalledWith('Copied AI output to clipboard')
     expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Wrote AI output to:'))
