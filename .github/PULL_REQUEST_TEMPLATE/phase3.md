@@ -1,4 +1,4 @@
-## Summary
+# Summary
 
 Implements Phase 3 features and docs:
 
@@ -44,4 +44,3 @@ Implements Phase 3 features and docs:
 - Phase 2 refined: `ENHANCEMENT_PLAN_PHASE_2.md`
 - Phase 3 refined: `ENHANCEMENT_PLAN_PHASE_3.md`
 - Phase 3B (copy image to clipboard): `ENHANCEMENT_PLAN_PHASE_3B.md`
-

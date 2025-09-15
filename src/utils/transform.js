@@ -40,7 +40,7 @@ function parseResizeSpec (spec) {
   if (!m) return null
   const width = m[1] ? parseInt(m[1], 10) : undefined
   const height = m[2] ? parseInt(m[2], 10) : undefined
-  if ((!width && !height) || (width < 1) || (height && height < 1)) return null
+  if ((!width && !height) || (width && width < 1) || (height && height < 1)) return null
   return { width, height }
 }
 

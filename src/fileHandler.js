@@ -52,7 +52,19 @@ class FileHandler {
 
         // Apply optional resize if provided
         if (resize) {
-          const resizeOpts = typeof resize === 'string' ? parseResizeSpec(resize) : resize
+          let resizeOpts = null
+
+          if (typeof resize === 'string') {
+            resizeOpts = parseResizeSpec(resize)
+          } else if (typeof resize === 'object' && resize !== null) {
+            // Validate non-string resize options
+            const { width, height } = resize
+            if ((width && typeof width === 'number' && width > 0) ||
+                (height && typeof height === 'number' && height > 0)) {
+              resizeOpts = { width, height }
+            }
+          }
+
           if (resizeOpts && (resizeOpts.width || resizeOpts.height)) {
             sharpInstance = sharpInstance.resize({
               width: resizeOpts.width,
