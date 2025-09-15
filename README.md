@@ -361,17 +361,25 @@ Tips for great recordings:
 - Keep terminal width to 80 columns to avoid wrapping in embeds.
 - Prefer short, focused demos per feature (copy/get, paste to file, watch/exec).
 
-This repo includes a starter tape:
+This repo includes starter tapes:
 
 ```text
-docs/demos/clipaste-basics.tape   # renders to docs/demos/clipaste-basics.gif
+docs/demos/clipaste-basics.tape     # basics: status/copy/get/paste (dry-run)
+docs/demos/clipaste-watch-exec.tape # watch --save/--exec with background run
 ```
 
 To render:
 
 ```bash
 # Install VHS (https://github.com/charmbracelet/vhs) then run
-npm run demo:render
+npm run demo:render:all
+```
+
+Embed examples in README:
+
+```markdown
+![clipaste basics](docs/demos/clipaste-basics.gif)
+![clipaste watch exec](docs/demos/clipaste-watch-exec.gif)
 ```
 
 ```
