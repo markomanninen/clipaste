@@ -99,9 +99,14 @@ class Watcher {
       }
     }
 
-    this._timer = setInterval(onTick, this.interval)
-    // Immediate first tick
-    onTick()
+    const tickLoop = async () => {
+      if (this._stopped) return;
+      await onTick();
+      if (!this._stopped) {
+        this._timer = setTimeout(tickLoop, this.interval);
+      }
+    };
+    tickLoop();
   }
 
   async stop () {
