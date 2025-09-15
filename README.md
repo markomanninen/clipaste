@@ -211,6 +211,44 @@ clipaste get | jq .  # Format JSON from clipboard
 ls | clipaste copy   # Copy directory listing
 ```
 
+### Watch and History
+
+Real-time monitoring and opt-in history are available via the `watch` and `history` commands.
+
+```bash
+# Monitor clipboard and print actions (CTRL+C to stop)
+clipaste watch --interval 1000 --verbose
+
+# Only react to matching content and save to history
+clipaste watch --filter "ERROR|WARN" --save
+
+# Run a command when clipboard changes (content on stdin)
+clipaste watch --exec "jq . | tee last.json" --once
+
+# Stop conditions
+clipaste watch --timeout 60000          # stop after 60s
+clipaste watch --max-events 5           # stop after 5 changes
+clipaste watch --idle-timeout 30000     # stop after 30s of no changes
+
+# Privacy and resource controls
+clipaste watch --no-persist             # do not write history to disk
+clipaste watch --max-item-size 262144   # skip items larger than 256 KB
+clipaste watch --max-items 100          # keep up to 100 entries
+clipaste watch --no-echo --verbose      # suppress content previews in logs
+
+# Inspect, restore, and export history
+clipaste history --list
+clipaste history --restore <id>
+clipaste history --export backup.json
+clipaste history --clear
+```
+
+Notes:
+
+- Polling interval has a floor of 200ms (default 1000ms). Very low intervals can use more CPU, especially on Linux.
+- `--exec` receives clipboard content on stdin and exposes env vars `CLIPASTE_TEXT` and `CLIPASTE_SHA256` for scripts.
+- History is text-first by design. Image history is planned for a later phase.
+
 ## Development
 
 ### Install Dependencies
@@ -260,6 +298,82 @@ tests/
 ├── fileHandler.test.js   # File handler tests
 ├── cli.test.js          # CLI tests
 └── integration.test.js   # End-to-end tests
+
+Additional Phase 2 files:
+
+```text
+src/
+├── watcher.js       # Polling-based clipboard watcher
+└── historyStore.js  # JSON-backed clipboard history with pruning
+
+tests/
+├── watcher.test.js        # Watcher unit tests (filter/exec/stop)
+├── watch-smoke.test.js    # Smoke test writing to temp history.json
+└── cli-watch-history.test.js # CLI wiring tests for new commands
+```
+
+### Automated CLI Recordings (for README demos)
+
+You can create automated, reproducible terminal recordings and embed them in the README. Three solid options:
+
+1) Asciinema + svg-term (SVG output for crisp embeds)
+
+- Record: `asciinema rec demo.cast` (run your commands, then exit with Ctrl+D)
+- Render SVG: `npx svg-term --in demo.cast --out docs/demo.svg --window --width 80 --height 24 --term iterm2`
+- Embed in README: `![clipaste demo](docs/demo.svg)`
+
+Pros: tiny, scalable SVG; good for GitHub. Cons: non-animated GIF fallback may be needed for some viewers.
+
+2) Terminalizer (scriptable YAML + GIF)
+
+- Init: `npx terminalizer init demo`
+- Edit `demo.yml` to script commands/delays (repeatable)
+- Record: `npx terminalizer record demo`
+- Render GIF: `npx terminalizer render demo` → creates `demo.gif`
+- Embed: `![clipaste demo](docs/demo.gif)`
+
+Pros: full-control GIF, easily hosted in repo. Cons: larger files.
+
+3) VHS by Charm (Tape files → GIF/MP4/SVG)
+
+- Create `docs/demos/clipaste.tape` with scripted keystrokes and commands, e.g.:
+
+  ```tape
+  Output docs/demos/clipaste.gif
+  Set FontSize 14
+  Type "clipaste watch --once --save"\n
+  # Simulate copying something from stdin in another shell
+  Sleep 500ms
+  Type "echo hello | clipaste copy"\n
+  Sleep 2s
+  ```
+
+- Render: `vhs docs/demos/clipaste-basics.tape` → `docs/demos/clipaste-basics.gif`
+- Or via npm: `npm run demo:render`
+- Embed: `![clipaste demo](docs/demos/clipaste-basics.gif)`
+
+Pros: fully scripted and deterministic; great for CI. Cons: requires `vhs` binary.
+
+Tips for great recordings:
+
+- Use a temporary workspace (`/tmp/clipaste-demo`) to keep outputs clean.
+- Set deterministic prompts and timestamps when possible, or use `--dry-run` for file previews.
+- Keep terminal width to 80 columns to avoid wrapping in embeds.
+- Prefer short, focused demos per feature (copy/get, paste to file, watch/exec).
+
+This repo includes a starter tape:
+
+```text
+docs/demos/clipaste-basics.tape   # renders to docs/demos/clipaste-basics.gif
+```
+
+To render:
+
+```bash
+# Install VHS (https://github.com/charmbracelet/vhs) then run
+npm run demo:render
+```
+
 ```
 
 ## Platform Support
