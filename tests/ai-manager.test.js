@@ -66,8 +66,6 @@ describe('AIManager', () => {
     expect(res.text).toBe('cloud-ok')
     expect(res.meta.model).toBe('cloud-model')
   })
-<<<<<<< HEAD
-=======
 
   it('throws when provider is unknown', async () => {
     const configStore = new ConfigStore({ defaults: { ai: { defaultProvider: 'ollama' } } })
@@ -99,5 +97,4 @@ describe('AIManager', () => {
     const overridden = await manager.applyRedaction('user@example.com key', { rules: 'emails', enabled: true })
     expect(overridden.text).toContain('[REDACTED_EMAIL]')
   })
->>>>>>> 7bb233b (Add AI plugin commands and local provider)
 })

@@ -2,11 +2,8 @@ jest.mock('../src/clipboard', () => jest.fn())
 jest.mock('../src/fileHandler', () => jest.fn())
 jest.mock('../src/ai/manager', () => jest.fn())
 
-<<<<<<< HEAD
-=======
 const path = require('path')
 const fs = require('fs')
->>>>>>> 7bb233b (Add AI plugin commands and local provider)
 const CLI = require('../src/cli')
 const ClipboardManager = require('../src/clipboard')
 const FileHandler = require('../src/fileHandler')
@@ -78,8 +75,6 @@ describe('CLI AI commands', () => {
     expect(parsed.redaction).toBeDefined()
     expect(errorSpy).not.toHaveBeenCalled()
   })
-<<<<<<< HEAD
-=======
 
   it('transform handles file source with disabled redaction and writes output to file', async () => {
     const filePath = path.join(process.cwd(), 'example.txt')
@@ -141,7 +136,6 @@ describe('CLI AI commands', () => {
 
   it('prepareRedaction forwards custom rule strings', async () => {
     await cli.prepareRedaction('content', { redact: 'emails' })
-    expect(mockAiManager.applyRedaction).toHaveBeenCalledWith('content', { enabled: undefined, rules: 'emails' })
+    expect(mockAiManager.applyRedaction).toHaveBeenCalledWith('content', { enabled: true, rules: 'emails' })
   })
->>>>>>> 7bb233b (Add AI plugin commands and local provider)
 })

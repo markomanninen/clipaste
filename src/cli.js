@@ -1025,11 +1025,7 @@ class CLI {
       return await this.clipboardManager.readText()
     }
     if (source === 'stdin') {
-<<<<<<< HEAD
       if (process.stdin.isTTY) {
-=======
-      if (!process.stdin || process.stdin.isTTY) {
->>>>>>> 7bb233b (Add AI plugin commands and local provider)
         throw new Error('No stdin content available. Pipe input or use --source clipboard|file.')
       }
       return await new Promise((resolve, reject) => {
@@ -1059,14 +1055,8 @@ class CLI {
   }
 
   async prepareRedaction (text, options = {}) {
-<<<<<<< HEAD
     const rules = typeof options.redact === 'string' ? options.redact : undefined
     const result = await this.aiManager.applyRedaction(text, { enabled: options.redact !== false, rules })
-=======
-    const disable = options.redact === false
-    const rules = typeof options.redact === 'string' ? options.redact : undefined
-    const result = await this.aiManager.applyRedaction(text, { enabled: disable ? false : undefined, rules })
->>>>>>> 7bb233b (Add AI plugin commands and local provider)
     return result
   }
 
