@@ -170,5 +170,10 @@ describe('Watcher', () => {
     await new Promise(resolve => setTimeout(resolve, 300))
     expect(history.addEntry.mock.calls.length).toBe(countAfterTimeout)
     expect(watcher._stopped).toBe(true)
+
+    // Should have made some calls but not too many due to timeout
+    // Platform timing may vary between 2-4 calls in 200ms with 50ms interval
+    expect(countAfterTimeout).toBeGreaterThanOrEqual(2)
+    expect(countAfterTimeout).toBeLessThanOrEqual(4)
   }, 30000)
 })

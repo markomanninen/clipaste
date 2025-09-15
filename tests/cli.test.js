@@ -13,12 +13,12 @@ jest.mock('clipboardy', () => ({
 }))
 
 // Mock console methods
-const mockConsole = {
+let mockConsole = {
   log: jest.fn(),
   error: jest.fn()
 }
 
-const mockProcess = {
+let mockProcess = {
   exit: jest.fn(),
   cwd: jest.fn(() => '/current/dir')
 }
@@ -27,24 +27,38 @@ describe('CLI', () => {
   let cli
   let mockClipboardManager
   let mockFileHandler
+  let originalConsole
+  let originalProcess
 
   beforeEach(() => {
-    // Reset mocks
-    ClipboardManager.mockClear()
-    FileHandler.mockClear()
-    jest.clearAllMocks()
+    // Store original globals
+    originalConsole = global.console
+    originalProcess = global.process
 
-    // Setup mocks
+    // Mock console methods
+    mockConsole = {
+      log: jest.fn(),
+      error: jest.fn(),
+      warn: jest.fn()
+    }
+
+    // Mock process methods
+    mockProcess = {
+      exit: jest.fn()
+    }
+
+    // Mock clipboard manager
     mockClipboardManager = {
       hasContent: jest.fn(),
-      getContentType: jest.fn(),
       readText: jest.fn(),
       readImage: jest.fn(),
       writeText: jest.fn(),
+      getContentType: jest.fn(),
       clear: jest.fn()
     }
     ClipboardManager.mockImplementation(() => mockClipboardManager)
 
+    // Mock file handler
     mockFileHandler = {
       saveText: jest.fn(),
       saveImage: jest.fn(),
@@ -61,6 +75,9 @@ describe('CLI', () => {
   })
 
   afterEach(() => {
+    // Restore original globals
+    global.console = originalConsole
+    global.process = originalProcess
     jest.restoreAllMocks()
   })
 
