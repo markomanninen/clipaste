@@ -84,4 +84,39 @@ describe('Watcher', () => {
     expect(child._options.env.CLIPASTE_TEXT).toBe('data')
     expect(child._options.env.CLIPASTE_SHA256).toMatch(/^[a-f0-9]{64}$/)
   })
+
+  test('stops after maxEvents is reached', async () => {
+    const history = { addEntry: jest.fn().mockResolvedValue(null) }
+    const watcher = new Watcher({ interval: 200, verbose: false })
+
+    // Three different contents -> should stop after handling 2
+    mockReadText
+      .mockResolvedValueOnce('a')
+      .mockResolvedValueOnce('b')
+      .mockResolvedValueOnce('c')
+      .mockResolvedValue('c')
+
+    await watcher.start({ save: true, history, maxEvents: 2 })
+    await advance(1000)
+
+    expect(history.addEntry).toHaveBeenCalledTimes(2)
+  })
+
+  test('stops on absolute timeout', async () => {
+    const history = { addEntry: jest.fn().mockResolvedValue(null) }
+    const watcher = new Watcher({ interval: 100, verbose: false })
+
+    // Keep returning new content rapidly
+    let i = 0
+    mockReadText.mockImplementation(() => Promise.resolve('x' + (i++)))
+
+    await watcher.start({ save: true, history, timeout: 300 })
+    // Run for slightly longer than timeout and capture count
+    await advance(400)
+    const countAfterTimeout = history.addEntry.mock.calls.length
+
+    // Advance much further; count should not increase after stop
+    await advance(1000)
+    expect(history.addEntry.mock.calls.length).toBe(countAfterTimeout)
+  })
 })
