@@ -92,7 +92,6 @@ describe('REAL Image Handling Tests', () => {
     it('should create actual PNG files from base64 data', async () => {
       const fileHandlerPath = path.join(__dirname, '../src/fileHandler.js').replace(/\\/g, '/')
       const clipboardPath = path.join(__dirname, '../src/clipboard.js').replace(/\\/g, '/')
-      // Fix Windows path issues by using forward slashes and proper escaping
       const testDirPath = testDir.replace(/\\/g, '/')
       const testScript = `
         try {
@@ -169,6 +168,7 @@ describe('REAL Image Handling Tests', () => {
       for (const format of formats) {
         const fileHandlerPath = path.join(__dirname, '../src/fileHandler.js').replace(/\\/g, '/')
         const clipboardPath = path.join(__dirname, '../src/clipboard.js').replace(/\\/g, '/')
+        const testDirForScript = testDir.replace(/\\/g, '/')
         const testScript = `
           try {
             const FileHandler = require('${fileHandlerPath}');
@@ -186,7 +186,7 @@ describe('REAL Image Handling Tests', () => {
             }
             
             fileHandler.saveImage(imageData.data, {
-              outputPath: '${testDir}',
+              outputPath: '${testDirForScript}',
               filename: 'test-${format}',
               format: '${format}'
             }).then(filePath => {
