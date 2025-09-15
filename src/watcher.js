@@ -125,7 +125,10 @@ class Watcher {
 
   _runExec (cmd, content, hash) {
     return new Promise((resolve) => {
-      const child = spawn(process.platform === 'win32' ? 'cmd' : 'sh', [process.platform === 'win32' ? '/c' : '-c', cmd], {
+      const isWindows = process.platform === 'win32';
+      const shell = isWindows ? 'cmd' : 'sh';
+      const shellFlag = isWindows ? '/c' : '-c';
+      const child = spawn(shell, [shellFlag, cmd], {
         env: {
           ...process.env,
           CLIPASTE_TEXT: content,
