@@ -1025,7 +1025,7 @@ class CLI {
       return await this.clipboardManager.readText()
     }
     if (source === 'stdin') {
-      if (!process.stdin || process.stdin.isTTY) {
+      if (process.stdin.isTTY) {
         throw new Error('No stdin content available. Pipe input or use --source clipboard|file.')
       }
       return await new Promise((resolve, reject) => {
