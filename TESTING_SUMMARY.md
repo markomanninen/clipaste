@@ -7,6 +7,7 @@ This repository includes comprehensive testing infrastructure that supports both
 ### For Development
 
 **Windows:**
+
 ```powershell
 # Quick development tests
 .\scripts\test-runner.ps1 quick
@@ -16,6 +17,7 @@ This repository includes comprehensive testing infrastructure that supports both
 ```
 
 **macOS/Linux:**
+
 ```bash
 # Quick development tests
 ./scripts/test-runner.sh quick

@@ -126,7 +126,7 @@ npm run release:major  # Breaking changes (1.0.0 → 2.0.0)
 
 - **GitHub Issues**: Report bugs or request features
 - **Discussions**: Ask questions or propose ideas
-- **Email**: Contact <marko.manninen@gmail.com>
+- **Email**: Contact <elonmedia@gmail.com>
 
 ## Enhancement Priorities
 

@@ -5,6 +5,7 @@ This document provides comprehensive instructions for running tests in the clipa
 ## Overview
 
 The clipaste project includes a robust testing suite with **headless environment support**, ensuring tests work reliably across:
+
 - **Windows** (GUI environment with clipboard access)
 - **macOS** (GUI environment with clipboard access)  
 - **Linux Desktop** (GUI environment with clipboard access)
@@ -13,23 +14,27 @@ The clipaste project includes a robust testing suite with **headless environment
 ## Test Types
 
 ### 1. Unit Tests
+
 - **Clipboard Manager**: Tests clipboard operations with headless/non-headless scenarios
 - **CLI Interface**: Tests command parsing and execution
 - **File Handling**: Tests file I/O operations
 - **Watch Functionality**: Tests file watching and history management
 
 ### 2. Integration Tests
+
 - **Real Functionality**: End-to-end clipboard operations
 - **Phase 1 Enhancements**: Command combinations and workflows
 - **Cross-platform Compatibility**: Platform-specific behavior validation
 
 ### 3. Smoke Tests
+
 - **Basic Operations**: Quick verification of core functionality
 - **Global Installation**: Tests npm global package installation
 
 ## Local Development Testing
 
 ### Prerequisites
+
 - Node.js 16+ installed
 - npm or yarn package manager
 - Platform-specific clipboard access (automatic)
@@ -58,17 +63,20 @@ npm test -- --watch
 ### Platform-Specific Notes
 
 #### Windows
+
 - Full clipboard functionality available
 - Tests use real clipboard operations
 - All 146+ tests should pass
 
 #### macOS  
+
 - Full clipboard functionality available
 - Tests use real clipboard operations
 - May require accessibility permissions for clipboard access
 - All 146+ tests should pass
 
 #### Linux Desktop
+
 - Requires X11 display server (`$DISPLAY` environment variable)
 - Full clipboard functionality with `xclip` or similar tools
 - All 146+ tests should pass
@@ -103,6 +111,7 @@ docker run -it --rm clipaste-test-ubuntu-node16 /bin/bash
 ### Docker Test Environment Details
 
 The Docker test environment includes:
+
 - **Base**: Node.js 16 on Ubuntu (Debian Bullseye)
 - **Display Server**: Xvfb (virtual framebuffer) on `:99`
 - **Clipboard Tools**: xclip for clipboard simulation
@@ -111,10 +120,12 @@ The Docker test environment includes:
 ### Expected Docker Behavior
 
 In Docker (headless environment):
+
 - Tests automatically detect headless mode
 - Clipboard operations use graceful fallbacks
 - Warning messages indicate headless simulation
 - All tests pass with informational warnings like:
+
   ```
   Info: Copy command test - clipboard access unavailable in headless/CI environment
   Info: File copy test skipped - clipboard unavailable in headless environment
@@ -125,12 +136,14 @@ In Docker (headless environment):
 ### For Contributors
 
 1. **Local Development** (your platform):
+
    ```bash
    npm install
    npm run test:pre-commit
    ```
 
 2. **Cross-Platform Verification**:
+
    ```bash
    # Build and test in Docker Ubuntu
    docker build -f scripts/Dockerfile.test -t clipaste-test .
@@ -138,6 +151,7 @@ In Docker (headless environment):
    ```
 
 3. **Before Committing**:
+
    ```bash
    # This runs automatically via git hooks
    npm run lint
@@ -163,7 +177,9 @@ docker run --rm clipaste-test /bin/bash -c "npm run test:pre-commit"
 ## Test Configuration
 
 ### Pre-commit Tests
+
 The `test:pre-commit` script excludes tests that require global npm installation:
+
 ```json
 {
   "scripts": {
@@ -173,7 +189,9 @@ The `test:pre-commit` script excludes tests that require global npm installation
 ```
 
 ### Environment Detection
+
 Tests automatically adapt based on environment:
+
 - **GUI Environment**: Full clipboard functionality
 - **Headless Environment**: Graceful fallbacks with simulation
 - **CI Environment**: Detected via `CI=true` or similar flags
@@ -183,6 +201,7 @@ Tests automatically adapt based on environment:
 ### Common Issues
 
 #### "Clipboard access denied" on Linux
+
 ```bash
 # Install clipboard tools
 sudo apt-get install xclip xsel
@@ -192,10 +211,12 @@ echo $DISPLAY  # Should show :0 or similar
 ```
 
 #### Tests hanging on macOS
+
 - Grant terminal app accessibility permissions in System Preferences
 - Some clipboard operations may require user permissions
 
 #### Docker build fails
+
 ```bash
 # Clean Docker cache and rebuild
 docker system prune -f
@@ -203,6 +224,7 @@ docker build --no-cache -f scripts/Dockerfile.test -t clipaste-test .
 ```
 
 #### Tests pass locally but fail in CI
+
 - Verify CI environment has headless detection working
 - Check that `CI=true` environment variable is set
 - Ensure Docker tests pass locally first
@@ -235,6 +257,7 @@ The test suite is designed to work seamlessly in CI environments:
 ```
 
 ### Expected CI Behavior
+
 - Headless mode automatically detected
 - All tests pass with informational warnings
 - No actual clipboard operations performed
@@ -250,6 +273,7 @@ The test suite is designed to work seamlessly in CI environments:
 ## Test Coverage
 
 The test suite covers:
+
 - ✅ Clipboard operations (read, write, clear)
 - ✅ File handling (save, load, format detection)
 - ✅ CLI command parsing and execution
