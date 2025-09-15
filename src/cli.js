@@ -1,3 +1,5 @@
+const path = require('path')
+const fsp = require('fs').promises
 const { Command } = require('commander')
 const ClipboardManager = require('./clipboard')
 const FileHandler = require('./fileHandler')
@@ -7,6 +9,8 @@ const LibraryStore = require('./libraryStore')
 const { renderTemplate } = require('./utils/template')
 const { version } = require('../package.json')
 const { isHeadlessEnvironment } = require('./utils/environment')
+const AIManager = require('./ai/manager')
+const { makeSummarizePrompt, makeClassifyPrompt, makeTransformPrompt } = require('./ai/prompts')
 
 class CLI {
   constructor () {
@@ -14,6 +18,7 @@ class CLI {
     this.clipboardManager = new ClipboardManager()
     this.fileHandler = new FileHandler()
     this.library = new LibraryStore()
+    this.aiManager = new AIManager()
     this.setupCommands()
   }
 
@@ -82,6 +87,81 @@ class CLI {
       .option('--image-info', 'Output image metadata JSON if clipboard has an image')
       .action(async (options) => {
         await this.handleGet(options)
+      })
+
+    const ai = this.program
+      .command('ai')
+      .description('AI-assisted clipboard utilities')
+
+    ai
+      .command('summarize')
+      .description('Summarize content using an AI provider')
+      .option('--source <source>', 'clipboard|stdin|file', 'clipboard')
+      .option('--file <path>', 'File path when source=file')
+      .option('--max-tokens <number>', 'Max tokens for the generated response')
+      .option('--provider <name>', 'Provider to use (default from config)')
+      .option('--model <name>', 'Model identifier to request')
+      .option('--copy', 'Copy AI output back to clipboard')
+      .option('--out <file>', 'Write AI output to a file')
+      .option('--json', 'Emit JSON with metadata to stdout')
+      .option('--consent', 'Confirm consent for network providers')
+      .option('--redact <rules>', 'Override redaction rules (comma separated)')
+      .option('--no-redact', 'Disable redaction pre-processing')
+      .option('--show-redacted', 'Print the redacted prompt preview')
+      .option('--temperature <number>', 'Provider temperature setting')
+      .option('--top-p <number>', 'Provider top-p setting')
+      .option('--seed <number>', 'Provider seed setting')
+      .option('--timeout <ms>', 'Request timeout in milliseconds')
+      .action(async (options) => {
+        await this.handleAiSummarize(options)
+      })
+
+    ai
+      .command('classify')
+      .description('Classify content against provided labels')
+      .option('--source <source>', 'clipboard|stdin|file', 'clipboard')
+      .option('--file <path>', 'File path when source=file')
+      .option('--labels <labels>', 'Comma separated labels to classify against')
+      .option('--provider <name>', 'Provider to use (default from config)')
+      .option('--model <name>', 'Model identifier to request')
+      .option('--copy', 'Copy AI output back to clipboard')
+      .option('--out <file>', 'Write AI output to a file')
+      .option('--json', 'Emit JSON with metadata to stdout')
+      .option('--consent', 'Confirm consent for network providers')
+      .option('--redact <rules>', 'Override redaction rules (comma separated)')
+      .option('--no-redact', 'Disable redaction pre-processing')
+      .option('--show-redacted', 'Print the redacted prompt preview')
+      .option('--max-tokens <number>', 'Max tokens for the generated response')
+      .option('--temperature <number>', 'Provider temperature setting')
+      .option('--top-p <number>', 'Provider top-p setting')
+      .option('--seed <number>', 'Provider seed setting')
+      .option('--timeout <ms>', 'Request timeout in milliseconds')
+      .action(async (options) => {
+        await this.handleAiClassify(options)
+      })
+
+    ai
+      .command('transform')
+      .description('Transform content with an AI instruction')
+      .option('--source <source>', 'clipboard|stdin|file', 'clipboard')
+      .option('--file <path>', 'File path when source=file')
+      .option('--instruction <text>', 'Instruction describing the transformation')
+      .option('--provider <name>', 'Provider to use (default from config)')
+      .option('--model <name>', 'Model identifier to request')
+      .option('--copy', 'Copy AI output back to clipboard')
+      .option('--out <file>', 'Write AI output to a file')
+      .option('--json', 'Emit JSON with metadata to stdout')
+      .option('--consent', 'Confirm consent for network providers')
+      .option('--redact <rules>', 'Override redaction rules (comma separated)')
+      .option('--no-redact', 'Disable redaction pre-processing')
+      .option('--show-redacted', 'Print the redacted prompt preview')
+      .option('--max-tokens <number>', 'Max tokens for the generated response')
+      .option('--temperature <number>', 'Provider temperature setting')
+      .option('--top-p <number>', 'Provider top-p setting')
+      .option('--seed <number>', 'Provider seed setting')
+      .option('--timeout <ms>', 'Request timeout in milliseconds')
+      .action(async (options) => {
+        await this.handleAiTransform(options)
       })
 
     // Watch command
@@ -921,6 +1001,137 @@ class CLI {
       console.error('Error:', e.message)
       process.exit(1)
     }
+  }
+
+  parseIntegerOption (value) {
+    if (value === undefined || value === null || value === '') return undefined
+    const num = parseInt(value, 10)
+    return Number.isNaN(num) ? undefined : num
+  }
+
+  parseFloatOption (value) {
+    if (value === undefined || value === null || value === '') return undefined
+    const num = parseFloat(value)
+    return Number.isNaN(num) ? undefined : num
+  }
+
+  async readAiSource (options = {}) {
+    const source = (options.source || 'clipboard').toLowerCase()
+    if (source === 'clipboard') {
+      const hasContent = await this.clipboardManager.hasContent()
+      if (!hasContent) throw new Error('Clipboard is empty')
+      const type = await this.clipboardManager.getContentType()
+      if (type !== 'text') throw new Error('Clipboard does not contain text content')
+      return await this.clipboardManager.readText()
+    }
+    if (source === 'stdin') {
+      if (!process.stdin || process.stdin.isTTY) {
+        throw new Error('No stdin content available. Pipe input or use --source clipboard|file.')
+      }
+      return await new Promise((resolve, reject) => {
+        const chunks = []
+        process.stdin.setEncoding('utf8')
+        process.stdin.on('data', (chunk) => chunks.push(chunk))
+        process.stdin.on('end', () => resolve(chunks.join('')))
+        process.stdin.on('error', reject)
+      })
+    }
+    if (source === 'file') {
+      if (!options.file) throw new Error('Provide --file <path> when using file source')
+      const filePath = path.resolve(options.file)
+      return await fsp.readFile(filePath, 'utf8')
+    }
+    throw new Error(`Unknown source '${options.source}'`)
+  }
+
+  extractProviderOptions (options = {}) {
+    return {
+      maxTokens: this.parseIntegerOption(options.maxTokens),
+      temperature: this.parseFloatOption(options.temperature),
+      topP: this.parseFloatOption(options.topP),
+      seed: this.parseIntegerOption(options.seed),
+      timeout: this.parseIntegerOption(options.timeout)
+    }
+  }
+
+  async prepareRedaction (text, options = {}) {
+    const disable = options.redact === false
+    const rules = typeof options.redact === 'string' ? options.redact : undefined
+    const result = await this.aiManager.applyRedaction(text, { enabled: disable ? false : undefined, rules })
+    return result
+  }
+
+  async outputAiResult (result, options = {}, context = {}) {
+    const payload = {
+      content: result.text,
+      meta: result.meta,
+      redaction: {
+        appliedRules: (context.redaction && context.redaction.appliedRules) || [],
+        redactions: (context.redaction && context.redaction.redactions) || [],
+        preview: options.showRedacted ? (context.redaction && context.redaction.text) : undefined
+      }
+    }
+    if (options.json) {
+      process.stdout.write(JSON.stringify(payload))
+    } else {
+      const text = result.text || ''
+      process.stdout.write(text)
+      if (!text.endsWith('\n')) process.stdout.write('\n')
+    }
+    const notify = options.json ? console.error : console.log
+    if (options.copy) {
+      await this.clipboardManager.writeText(result.text || '')
+      notify('Copied AI output to clipboard')
+    }
+    if (options.out) {
+      const outPath = path.resolve(options.out)
+      await fsp.mkdir(path.dirname(outPath), { recursive: true })
+      await fsp.writeFile(outPath, result.text || '', 'utf8')
+      notify(`Wrote AI output to: ${outPath}`)
+    }
+  }
+
+  async runAiCommand (task, options, promptFactory) {
+    try {
+      const input = await this.readAiSource(options)
+      const redaction = await this.prepareRedaction(input, options)
+      if (options.showRedacted && redaction && typeof redaction.text === 'string') {
+        console.log('Redacted prompt preview:')
+        console.log(redaction.text)
+      }
+      const providerOpts = this.extractProviderOptions(options)
+      const prompt = promptFactory(redaction.text, providerOpts)
+      const result = await this.aiManager.runPrompt({
+        prompt,
+        provider: options.provider,
+        model: options.model,
+        consent: !!options.consent,
+        maxTokens: providerOpts.maxTokens,
+        temperature: providerOpts.temperature,
+        topP: providerOpts.topP,
+        seed: providerOpts.seed,
+        timeout: providerOpts.timeout,
+        raw: !!options.json
+      })
+      await this.outputAiResult(result, options, { redaction, task })
+    } catch (e) {
+      console.error('Error:', e.message)
+      process.exit(1)
+    }
+  }
+
+  async handleAiSummarize (options) {
+    await this.runAiCommand('summarize', options, (text, providerOpts) => makeSummarizePrompt(text, { maxTokens: providerOpts.maxTokens }))
+  }
+
+  async handleAiClassify (options) {
+    const labelsCsv = options.labels || ''
+    const labels = labelsCsv.split(',').map(s => s.trim()).filter(Boolean)
+    await this.runAiCommand('classify', options, (text) => makeClassifyPrompt(text, labels))
+  }
+
+  async handleAiTransform (options) {
+    await this.runAiCommand('transform', options, (text) => makeTransformPrompt(text, options.instruction))
   }
 
   formatFileSize (bytes) {
