@@ -2,7 +2,45 @@
 
 This directory contains development and testing scripts for the clipaste project.
 
-## Scripts
+## Quick Test Runners
+
+### `test-runner.sh` (Linux/macOS)
+
+Interactive test runner for cross-platform testing.
+
+**Usage:**
+
+```bash
+# Interactive mode
+./scripts/test-runner.sh
+
+# Direct commands
+./scripts/test-runner.sh local    # Local tests only
+./scripts/test-runner.sh docker   # Docker tests only
+./scripts/test-runner.sh full     # Full cross-platform suite
+./scripts/test-runner.sh build    # Build Docker image
+./scripts/test-runner.sh quick    # Quick pre-commit tests
+```
+
+### `test-runner.ps1` (Windows PowerShell)
+
+PowerShell version of the test runner for Windows.
+
+**Usage:**
+
+```powershell
+# Interactive mode
+.\scripts\test-runner.ps1
+
+# Direct commands
+.\scripts\test-runner.ps1 local    # Local tests only
+.\scripts\test-runner.ps1 docker   # Docker tests only
+.\scripts\test-runner.ps1 full     # Full cross-platform suite
+.\scripts\test-runner.ps1 build    # Build Docker image
+.\scripts\test-runner.ps1 quick    # Quick pre-commit tests
+```
+
+## Legacy CI Testing Scripts
 
 ### `test-ci-simulation.sh`
 

@@ -7,54 +7,112 @@ const mockClipboardy = {
 }
 ClipboardManager.__setMockClipboardy(mockClipboardy)
 
+// Store original environment
+const originalEnv = process.env
+
+// Helper to set up environment for testing
+function setupNonHeadlessEnv () {
+  process.env = { ...originalEnv }
+  delete process.env.CI
+  delete process.env.HEADLESS
+  delete process.env.XVFB_RUN
+  if (process.platform !== 'win32') {
+    process.env.DISPLAY = ':0'
+  }
+}
+
+function setupHeadlessEnv () {
+  process.env = { ...originalEnv }
+  process.env.CI = 'true'
+}
+
 describe('ClipboardManager', () => {
   let clipboardManager
 
-  beforeEach(() => {
-    clipboardManager = new ClipboardManager()
-    jest.clearAllMocks()
+  describe('in non-headless environment', () => {
+    beforeEach(() => {
+      setupNonHeadlessEnv()
+      clipboardManager = new ClipboardManager()
+      jest.clearAllMocks()
+    })
+
+    afterEach(() => {
+      process.env = originalEnv
+    })
+
+    describe('hasContent', () => {
+      it('should return true when clipboard has content', async () => {
+        mockClipboardy.read.mockResolvedValue('test content')
+
+        const result = await clipboardManager.hasContent()
+
+        expect(result).toBe(true)
+        expect(mockClipboardy.read).toHaveBeenCalled()
+      })
+
+      it('should return false when clipboard is empty', async () => {
+        mockClipboardy.read.mockResolvedValue('')
+
+        const result = await clipboardManager.hasContent()
+
+        expect(result).toBe(false)
+      })
+
+      it('should throw error when clipboard read fails', async () => {
+        mockClipboardy.read.mockRejectedValue(new Error('Clipboard access denied'))
+
+        await expect(clipboardManager.hasContent()).rejects.toThrow('Failed to read clipboard: Clipboard access denied')
+      })
+    })
+
+    describe('readText', () => {
+      it('should return text content from clipboard', async () => {
+        const testContent = 'Hello, World!'
+        mockClipboardy.read.mockResolvedValue(testContent)
+
+        const result = await clipboardManager.readText()
+
+        expect(result).toBe(testContent)
+        expect(mockClipboardy.read).toHaveBeenCalled()
+      })
+
+      it('should throw error when reading text fails', async () => {
+        mockClipboardy.read.mockRejectedValue(new Error('Read failed'))
+
+        await expect(clipboardManager.readText()).rejects.toThrow('Failed to read text from clipboard: Read failed')
+      })
+    })
   })
 
-  describe('hasContent', () => {
-    it('should return true when clipboard has content', async () => {
-      mockClipboardy.read.mockResolvedValue('test content')
-
-      const result = await clipboardManager.hasContent()
-
-      expect(result).toBe(true)
-      expect(mockClipboardy.read).toHaveBeenCalled()
+  describe('in headless environment', () => {
+    beforeEach(() => {
+      setupHeadlessEnv()
+      clipboardManager = new ClipboardManager()
+      jest.clearAllMocks()
     })
 
-    it('should return false when clipboard is empty', async () => {
-      mockClipboardy.read.mockResolvedValue('')
-
-      const result = await clipboardManager.hasContent()
-
-      expect(result).toBe(false)
+    afterEach(() => {
+      process.env = originalEnv
     })
 
-    it('should throw error when clipboard read fails', async () => {
-      mockClipboardy.read.mockRejectedValue(new Error('Clipboard access denied'))
+    describe('hasContent', () => {
+      it('should return false in headless environment', async () => {
+        const result = await clipboardManager.hasContent()
 
-      await expect(clipboardManager.hasContent()).rejects.toThrow('Failed to read clipboard: Clipboard access denied')
-    })
-  })
-
-  describe('readText', () => {
-    it('should return text content from clipboard', async () => {
-      const testContent = 'Hello, World!'
-      mockClipboardy.read.mockResolvedValue(testContent)
-
-      const result = await clipboardManager.readText()
-
-      expect(result).toBe(testContent)
-      expect(mockClipboardy.read).toHaveBeenCalled()
+        expect(result).toBe(false)
+        // Should not call clipboardy in headless mode
+        expect(mockClipboardy.read).not.toHaveBeenCalled()
+      })
     })
 
-    it('should throw error when reading text fails', async () => {
-      mockClipboardy.read.mockRejectedValue(new Error('Read failed'))
+    describe('readText', () => {
+      it('should return empty string in headless environment', async () => {
+        const result = await clipboardManager.readText()
 
-      await expect(clipboardManager.readText()).rejects.toThrow('Failed to read text from clipboard: Read failed')
+        expect(result).toBe('')
+        // Should not call clipboardy in headless mode
+        expect(mockClipboardy.read).not.toHaveBeenCalled()
+      })
     })
   })
 

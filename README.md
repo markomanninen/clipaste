@@ -267,6 +267,9 @@ npm install
 # Run all tests
 npm test
 
+# Run pre-commit tests (recommended for development)
+npm run test:pre-commit
+
 # Run tests with coverage
 npm run test:coverage
 
@@ -278,6 +281,36 @@ npm run test:ci-sim      # Simulate CI environment
 npm run test:ci-check    # Check CI protections
 npm run test:docker      # Test in Docker Ubuntu environment
 ```
+
+### Cross-Platform Testing
+
+**Docker Testing (Linux/Headless environment):**
+```bash
+# Build test environment
+docker build -f scripts/Dockerfile.test -t clipaste-test .
+
+# Run pre-commit tests in Docker
+docker run --rm clipaste-test /bin/bash -c "npm run test:pre-commit"
+
+# Run all tests in Docker
+docker run --rm clipaste-test /bin/bash -c "npm test"
+```
+
+**Platform-specific commands:**
+```bash
+# Windows (PowerShell)
+npm run test:pre-commit
+
+# macOS/Linux 
+npm run test:pre-commit
+
+# CI/Docker (headless)
+docker run --rm clipaste-test /bin/bash -c "npm run test:pre-commit"
+```
+
+> 📋 **Headless Environment Support**: Tests automatically detect headless environments (Docker, CI) and gracefully handle clipboard operations with simulated behavior. All tests pass with informational warnings in headless mode.
+
+> 📖 **Detailed Testing Guide**: See [TESTING.md](./TESTING.md) for comprehensive testing instructions including troubleshooting, cross-platform workflows, and CI setup.
 
 > Note: `clipboardy` is ESM-only. The library is loaded via a lazy dynamic `import()` inside `src/clipboard.js`. Real functionality and smoke tests that directly exercise the dependency spawn child Node processes and also use dynamic `import()` to validate availability without converting the whole project to ESM.
 

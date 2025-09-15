@@ -5,6 +5,29 @@ const Watcher = require('./watcher')
 const HistoryStore = require('./historyStore')
 const { version } = require('../package.json')
 
+// Helper function to detect headless environment
+function isHeadlessEnvironment () {
+  // Check for various CI/headless indicators
+  // On Windows, DISPLAY might not be set even in GUI environments, so don't check it
+  if (process.platform === 'win32') {
+    return !!(
+      process.env.CI ||
+      process.env.HEADLESS ||
+      process.env.XVFB_RUN ||
+      process.argv.includes('--headless')
+    )
+  }
+
+  // On Unix-like systems, DISPLAY is a good indicator
+  return !!(
+    process.env.CI ||
+    process.env.HEADLESS ||
+    !process.env.DISPLAY ||
+    process.env.XVFB_RUN ||
+    process.argv.includes('--headless')
+  )
+}
+
 class CLI {
   constructor () {
     this.program = new Command()
@@ -166,10 +189,15 @@ class CLI {
 
   async handleStatus () {
     try {
+      const isHeadless = isHeadlessEnvironment()
       const hasContent = await this.clipboardManager.hasContent()
 
       if (!hasContent) {
-        console.log('Clipboard is empty')
+        if (isHeadless) {
+          console.log('Clipboard is empty (headless mode - simulated)')
+        } else {
+          console.log('Clipboard is empty')
+        }
         return
       }
 
@@ -198,10 +226,16 @@ class CLI {
 
   async handleClear (options = {}) {
     try {
+      const isHeadless = isHeadlessEnvironment()
+
       // Check if clipboard has content first
       const hasContent = await this.clipboardManager.hasContent()
       if (!hasContent) {
-        console.log('Clipboard is already empty')
+        if (isHeadless) {
+          console.log('Clipboard is already empty (headless mode)')
+        } else {
+          console.log('Clipboard is already empty')
+        }
         return
       }
 
@@ -235,7 +269,11 @@ class CLI {
       }
 
       await this.clipboardManager.clear()
-      console.log('Clipboard cleared')
+      if (isHeadless) {
+        console.log('Clipboard cleared (headless mode - simulated)')
+      } else {
+        console.log('Clipboard cleared')
+      }
     } catch (error) {
       console.error('Error clearing clipboard:', error.message)
       process.exit(1)
@@ -244,6 +282,8 @@ class CLI {
 
   async handleCopy (text, options) {
     try {
+      const isHeadless = isHeadlessEnvironment()
+
       if (options.file) {
         // Copy file contents
         const fs = require('fs').promises
@@ -252,7 +292,11 @@ class CLI {
         try {
           const content = await fs.readFile(options.file, 'utf8')
           await this.clipboardManager.writeText(content)
-          console.log(`Copied contents of ${path.basename(options.file)} to clipboard`)
+          if (isHeadless) {
+            console.log(`Copied contents of ${path.basename(options.file)} to clipboard (headless mode - simulated)`)
+          } else {
+            console.log(`Copied contents of ${path.basename(options.file)} to clipboard`)
+          }
         } catch (error) {
           console.error(`Error reading file ${options.file}:`, error.message)
           process.exit(1)
@@ -260,7 +304,11 @@ class CLI {
       } else if (text) {
         // Copy provided text
         await this.clipboardManager.writeText(text)
-        console.log(`Copied text to clipboard (${text.length} characters)`)
+        if (isHeadless) {
+          console.log(`Copied text to clipboard (${text.length} characters) (headless mode - simulated)`)
+        } else {
+          console.log(`Copied text to clipboard (${text.length} characters)`)
+        }
       } else {
         // Check if stdin has data
         if (process.stdin.isTTY) {
@@ -281,7 +329,11 @@ class CLI {
             const content = chunks.join('')
             if (content.trim()) {
               await this.clipboardManager.writeText(content)
-              console.log(`Copied piped content to clipboard (${content.length} characters)`)
+              if (isHeadless) {
+                console.log(`Copied piped content to clipboard (${content.length} characters) (headless mode - simulated)`)
+              } else {
+                console.log(`Copied piped content to clipboard (${content.length} characters)`)
+              }
             } else {
               console.log('No content provided to copy')
             }
