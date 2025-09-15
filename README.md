@@ -258,6 +258,23 @@ clipaste history --list
 clipaste history --restore <id>
 clipaste history --export backup.json
 clipaste history --clear
+
+# Save, List, Render a template with variables and copy to clipboard
+clipaste template save --name "invoice" --file invoice-template.md
+clipaste template list
+clipaste template render --name "invoice" --vars "customer=Acme,amount=1000"
+
+# Save, List, Copy a snippet to clipboard
+clipaste snippet save --name "greeting" --text "Hello, World!"
+clipaste snippet list
+clipaste snippet copy --name "greeting"
+
+# Search clipboard history for a keyword, 
+# snippets for a tag or text, and
+# templates for a variable or name
+clipaste history search --query "meeting"
+clipaste snippet search --query "greeting"
+clipaste template search --query "invoice"
 ```
 
 Notes:
@@ -313,22 +330,13 @@ docker run --rm clipaste-test /bin/bash -c "npm test"
 **Platform-specific commands:**
 
 ```bash
-# Windows (PowerShell)
-npm run test:pre-commit
-
-# macOS/Linux 
-npm run test:pre-commit
-
-# CI/Docker (headless)
+# CI/Docker (headless, for testing Linux environment)
 docker run --rm clipaste-test /bin/bash -c "npm run test:pre-commit"
 ```
 
 > 📋 **Headless Environment Support**: Tests automatically detect headless environments (Docker, CI) and gracefully handle clipboard operations with simulated behavior. All tests pass with informational warnings in headless mode.
-
 > 📖 **Detailed Testing Guide**: See [TESTING.md](./TESTING.md) for comprehensive testing instructions including troubleshooting, cross-platform workflows, and CI setup.
-
 > Note: `clipboardy` is ESM-only. The library is loaded via a lazy dynamic `import()` inside `src/clipboard.js`. Real functionality and smoke tests that directly exercise the dependency spawn child Node processes and also use dynamic `import()` to validate availability without converting the whole project to ESM.
-
 > Windows / CI Soft-Fail Note: Some file creation tests (`real-image-handling.test.js`) embed inline scripts via `node -e`. On Windows or certain CI runners, path escaping and line-ending normalization can occasionally cause transient failures inside those ephemeral child processes. The tests include a guarded "soft-fail" path that logs diagnostics (prefixed with `WINDOWS_SOFT_FAIL` or warning messages) while still passing to avoid flaky builds. With the enhanced Windows clipboard image handling implemented, the core clipboard operations are now reliable on Windows, and soft-fail usage has been reduced to only file creation edge cases.
 
 ### Linting
@@ -345,28 +353,23 @@ npm run lint:fix
 
 ```text
 src/
-├── index.js        # Main entry point
-├── cli.js          # CLI interface and command handling
-├── clipboard.js    # Clipboard operations
-└── fileHandler.js  # File saving operations
+├── index.js           # Main entry point
+├── cli.js             # CLI interface and command handling
+├── clipboard.js       # Clipboard operations
+├── fileHandler.js     # File saving operations
+├── watcher.js         # Polling-based clipboard watcher
+├── historyStore.js    # JSON-backed clipboard history with pruning
+├── libraryStore.js    # Templates/snippets storage and tags (Phase 4A)
+└── utils/template.js  # Minimal renderer and auto vars (Phase 4A)
 
 tests/
-├── clipboard.test.js     # Clipboard manager tests
-├── fileHandler.test.js   # File handler tests
-├── cli.test.js          # CLI tests
-└── integration.test.js   # End-to-end tests
-
-Additional Phase 2 files:
-
-```text
-src/
-├── watcher.js       # Polling-based clipboard watcher
-└── historyStore.js  # JSON-backed clipboard history with pruning
-
-tests/
-├── watcher.test.js        # Watcher unit tests (filter/exec/stop)
-├── watch-smoke.test.js    # Smoke test writing to temp history.json
-└── cli-watch-history.test.js # CLI wiring tests for new commands
+├── clipboard.test.js         # Clipboard manager tests
+├── fileHandler.test.js       # File handler tests
+├── cli.test.js               # CLI tests
+├── watcher.test.js           # Watcher unit tests (filter/exec/stop)
+├── watch-smoke.test.js       # Smoke test writing to temp history.json
+├── cli-watch-history.test.js # CLI wiring tests for new commands
+└── integration.test.js       # End-to-end tests
 ```
 
 ## Platform Support
@@ -379,28 +382,26 @@ tests/
 
 MIT
 
-## Phase 3 features
+## Advanced Features
 
-Captions below each demo. To render locally: run `npm run demo:render` or `vhs docs/demos/<tape-name>.tape`.
+- **Transforms:** Encode/decode URL and Base64, and pretty-print JSON directly from the clipboard.  
+ ![Transforms demo](docs/demos/clipaste-phase3-transforms.gif)
 
-### 1. JSON/URL/Base64 Transforms
+- **Auto Extension for Text Paste:** Auto-detect file extension (.json/.md/.sh/.js) when pasting text.  
+ ![Auto extension demo](docs/demos/clipaste-phase3-auto-extension.gif)
 
-- Caption: Encode/decode URL and Base64, and pretty-print JSON directly from the clipboard.
-- Demo: docs/demos/clipaste-phase3-transforms.gif
+- **Image Paste with Resize/Format:** Paste a base64 image from clipboard, resize on save, and convert format.  
+ ![Image paste demo](docs/demos/clipaste-phase3-image-resize.gif)
 
-### 2. Auto Extension for Text Paste
+- **Snippets:** Save a named snippet and copy it to the clipboard.  
+ ![Snippets demo](docs/demos/clipaste-phase4a-snippets.gif)
 
-- Caption: Auto-detect file extension (.json/.md/.sh/.js) when pasting text.
-- Demo: docs/demos/clipaste-phase3-auto-extension.gif
+- **Templates:** Save a template and render with variables, copying the output.  
+ ![Templates demo](docs/demos/clipaste-phase4a-templates.gif)
 
-### 3. Image Paste with Resize/Format
+## Development Roadmap (Future)
 
-- Caption: Paste a base64 image from clipboard, resize on save, and convert format.
-- Demo: docs/demos/clipaste-phase3-image-resize.gif
-
-## Roadmap and Plans
-
-- Phase 1-4 overview: ENHANCEMENT_PLAN.md
-- Phase 2 (refined): ENHANCEMENT_PLAN_PHASE_2.md
-- Phase 3 (integration features): ENHANCEMENT_PLAN_PHASE_3.md
-- Phase 3B (copy image to clipboard): ENHANCEMENT_PLAN_PHASE_3B.md
+- [Enhancement Plan Overview](ENHANCEMENT_PLAN.md)
+- [Phase 3B](ENHANCEMENT_PLAN_PHASE_3B.md)
+- [Phase 4B](ENHANCEMENT_PLAN_PHASE_4B.md)
+- [Phase 4C](ENHANCEMENT_PLAN_PHASE_4C.md)

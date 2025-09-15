@@ -56,6 +56,10 @@ This repo includes starter tapes:
 ```text
 docs/demos/clipaste-basics.tape     # basics: status/copy/get/paste (dry-run)
 docs/demos/clipaste-watch-exec.tape # watch --save/--exec with background run
+docs/demos/clipaste-phase4a-snippets.tape   # snippets: add/list/copy
+docs/demos/clipaste-phase4a-templates.tape  # templates: save/list/use
+docs/demos/clipaste-phase4a-pick.tape       # pick templates with fzf fallback
+docs/demos/clipaste-phase4a-search.tape     # search templates by name/body
 ```
 
 To render:
