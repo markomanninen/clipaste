@@ -21,7 +21,7 @@ const Watcher = require('../src/watcher')
 
 function advance (ms) {
   jest.advanceTimersByTime(ms)
-  return Promise.resolve()
+  return new Promise(resolve => setImmediate(resolve))
 }
 
 describe('Watcher', () => {
