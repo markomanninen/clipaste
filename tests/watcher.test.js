@@ -42,6 +42,44 @@ describe('Watcher', () => {
     expect(history.addEntry).toHaveBeenCalledWith('foo')
   })
 
+  test('stops on idle-timeout when no changes occur', async () => {
+    const history = { addEntry: jest.fn().mockResolvedValue(null) }
+    const watcher = new Watcher({ interval: 100, verbose: true })
+
+    // Always empty clipboard content
+    mockReadText.mockResolvedValue('')
+
+    await watcher.start({ save: true, history, idleTimeout: 300 })
+    await advance(400)
+
+    // Should have stopped and not saved anything
+    expect(watcher._stopped).toBe(true)
+    expect(history.addEntry).not.toHaveBeenCalled()
+  })
+
+  test('no-echo suppresses preview in verbose logs', async () => {
+    const history = { addEntry: jest.fn().mockResolvedValue(null) }
+    const watcher = new Watcher({ interval: 200, verbose: true })
+
+    mockReadText.mockResolvedValueOnce('secret-content')
+
+    const origErr = console.error
+    const calls = []
+    console.error = (...args) => { calls.push(args.join(' ')) }
+
+    try {
+      await watcher.start({ save: true, history, once: true, noEcho: true })
+      // allow immediate tick to run
+      await Promise.resolve()
+
+      // We should see a change log without the preview marker
+      const changeLine = calls.find(l => l.startsWith('[watch] change'))
+      expect(changeLine).toBeTruthy()
+      expect(changeLine).not.toContain('preview=')
+    } finally {
+      console.error = origErr
+    }
+  })
   test('applies filter before acting', async () => {
     const history = { addEntry: jest.fn().mockResolvedValue(null) }
     const watcher = new Watcher({ interval: 200, verbose: false })
