@@ -10,18 +10,21 @@ describe('Global Executable Tests', () => {
   let testDir
 
   beforeAll(async () => {
-    // Check if clipaste is globally available
+    // Check if clipaste is globally available (platform-specific command)
+    const whichCommand = process.platform === 'win32' ? 'where clipaste' : 'which clipaste'
+
     try {
       await new Promise((resolve, reject) => {
-        exec('which clipaste', (error, stdout) => {
-          if (error) reject(error)
-          else {
+        exec(whichCommand, (error, stdout, stderr) => {
+          if (error || !stdout.trim()) {
+            reject(new Error('Command not found or no output'))
+          } else {
             isGloballyInstalled = true
             resolve(stdout)
           }
         })
       })
-    } catch {
+    } catch (error) {
       // clipaste not globally installed, skip these tests
       isGloballyInstalled = false
     }
@@ -42,10 +45,17 @@ describe('Global Executable Tests', () => {
 
   const runGlobalCommand = (workingDir, args) => {
     return new Promise((resolve) => {
-      const child = spawn('clipaste', args, {
+      const spawnOptions = {
         stdio: 'pipe',
         cwd: workingDir
-      })
+      }
+
+      // On Windows, we need shell: true to properly resolve .cmd files
+      if (process.platform === 'win32') {
+        spawnOptions.shell = true
+      }
+
+      const child = spawn('clipaste', args, spawnOptions)
 
       let stdout = ''
       let stderr = ''

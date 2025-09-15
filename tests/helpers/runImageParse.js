@@ -27,12 +27,6 @@ async function main () {
     // For negative tests (shouldWork === false) we intentionally expect failure (exit code 1)
     const success = shouldWork ? (isImage && !!parsed) : false
     if (!success) {
-      // Allow a soft pass only for EXPECTED working cases on Windows (flaky platform nuance)
-      const isWin = process.platform === 'win32'
-      if (isWin && shouldWork) {
-        console.warn('WINDOWS_SOFT_FAIL: image parsing unexpected failure but tolerated for diagnostics')
-        process.exit(0)
-      }
       process.exit(1)
     }
     process.exit(0)

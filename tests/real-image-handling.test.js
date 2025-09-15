@@ -92,6 +92,8 @@ describe('REAL Image Handling Tests', () => {
     it('should create actual PNG files from base64 data', async () => {
       const fileHandlerPath = path.join(__dirname, '../src/fileHandler.js').replace(/\\/g, '/')
       const clipboardPath = path.join(__dirname, '../src/clipboard.js').replace(/\\/g, '/')
+      // Fix Windows path issues by using forward slashes and proper escaping
+      const testDirPath = testDir.replace(/\\/g, '/')
       const testScript = `
         try {
           const FileHandler = require('${fileHandlerPath}');
@@ -109,7 +111,7 @@ describe('REAL Image Handling Tests', () => {
           }
           
           fileHandler.saveImage(imageData.data, {
-            outputPath: '${testDir}',
+            outputPath: '${testDirPath}',
             filename: 'real-test-image',
             format: 'png'
           }).then(filePath => {
@@ -143,18 +145,9 @@ describe('REAL Image Handling Tests', () => {
       expect(result.code).toBe(0)
       expect(result.stdout).toContain('File created:')
 
-      // Verify file was actually created with diagnostics
+      // Verify file was actually created
       const files = await fs.readdir(testDir)
       const pngFiles = files.filter(f => f.endsWith('.png'))
-      if (pngFiles.length === 0) {
-        console.error('No PNG files found. Directory contents:', files)
-        console.error('Test directory:', testDir)
-        // On Windows, allow soft fail for file creation issues
-        if (process.platform === 'win32') {
-          console.warn('WINDOWS_SOFT_FAIL: PNG file creation test - skipping for platform compatibility')
-          return
-        }
-      }
       expect(pngFiles.length).toBeGreaterThan(0)
 
       // Verify it's a valid PNG file
@@ -218,17 +211,6 @@ describe('REAL Image Handling Tests', () => {
           child.stderr.on('data', (data) => { stderr += data.toString() })
           child.on('close', (code) => resolve({ code, stdout, stderr }))
         })
-
-        if (result.code !== 0) {
-          console.error(`${format} image file creation failed:`)
-          console.error('STDOUT:', result.stdout)
-          console.error('STDERR:', result.stderr)
-          // On Windows, allow soft fail for file creation issues with specific formats
-          if (process.platform === 'win32') {
-            console.warn(`WINDOWS_SOFT_FAIL: ${format} file creation test - skipping for platform compatibility`)
-            continue
-          }
-        }
         expect(result.code).toBe(0)
         expect(result.stdout).toContain(`${format} file created:`)
       }

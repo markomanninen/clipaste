@@ -300,7 +300,7 @@ class CLI {
       const hasContent = await this.clipboardManager.hasContent()
       if (!hasContent) {
         // Don't output anything if clipboard is empty, just like pbpaste
-        return
+        process.exit(0)
       }
 
       const content = await this.clipboardManager.readText()

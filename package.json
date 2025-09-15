@@ -11,6 +11,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "test:pre-commit": "jest --testPathIgnorePatterns=tests/global-executable.test.js",
     "test:ci-sim": "./scripts/test-ci-simulation.sh",
     "test:ci-check": "./scripts/test-ci-protections.sh",
     "test:docker": "./scripts/test-docker.sh",
