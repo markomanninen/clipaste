@@ -10,7 +10,7 @@ class AIProviderError extends Error {
 class AIProvider {
   constructor (opts = {}) {
     this.name = opts.name || 'unknown'
-    this.isLocal = opts.isLocal !== false
+    this.isLocal = opts.isLocal ?? true
     this.defaultModel = opts.defaultModel || null
   }
 
