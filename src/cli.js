@@ -3,6 +3,8 @@ const ClipboardManager = require('./clipboard')
 const FileHandler = require('./fileHandler')
 const Watcher = require('./watcher')
 const HistoryStore = require('./historyStore')
+const LibraryStore = require('./libraryStore')
+const { renderTemplate } = require('./utils/template')
 const { version } = require('../package.json')
 const { isHeadlessEnvironment } = require('./utils/environment')
 
@@ -11,6 +13,7 @@ class CLI {
     this.program = new Command()
     this.clipboardManager = new ClipboardManager()
     this.fileHandler = new FileHandler()
+    this.library = new LibraryStore()
     this.setupCommands()
   }
 
@@ -107,6 +110,11 @@ class CLI {
       .command('history')
       .description('Manage clipboard history')
       .option('--list', 'List recent history items')
+      .option('--search <query>', 'Search history by preview/content')
+      .option('--body', 'Search includes full content')
+      .option('--tag-add <id>', 'Add tags to a history item by id')
+      .option('--tag-remove <id>', 'Remove tags from a history item by id')
+      .option('--tags <csv>', 'Comma separated tags for tag operations')
       .option('--restore <id>', 'Restore a history item to clipboard by id')
       .option('--clear', 'Clear history')
       .option('--export <file>', 'Export history to file')
@@ -117,6 +125,98 @@ class CLI {
       .action(async (options) => {
         await this.handleHistory(options)
       })
+
+    // Snippet subcommands
+    const snippet = this.program.command('snippet').description('Manage snippets')
+    snippet
+      .command('add')
+      .description('Create or update a snippet')
+      .argument('<name>', 'Snippet name (e.g., code/log)')
+      .option('--text <text>', 'Snippet text content')
+      .option('--from <file>', 'Read content from file')
+      .action(async (name, options) => { await this.handleSnippetAdd(name, options) })
+    snippet
+      .command('copy')
+      .description('Copy snippet to clipboard')
+      .argument('<name>', 'Snippet name')
+      .action(async (name) => { await this.handleSnippetCopy(name) })
+    snippet
+      .command('list')
+      .description('List snippets')
+      .action(async () => { await this.handleSnippetList() })
+    snippet
+      .command('delete')
+      .description('Delete a snippet')
+      .argument('<name>', 'Snippet name')
+      .action(async (name) => { await this.handleSnippetDelete(name) })
+
+    // Template subcommands
+    const template = this.program.command('template').description('Manage templates')
+    template
+      .command('save')
+      .description('Save a template from file or clipboard')
+      .argument('<name>', 'Template name (e.g., pr/desc)')
+      .option('--from <file>', 'Read content from file')
+      .option('--from-clipboard', 'Use current clipboard content')
+      .action(async (name, options) => { await this.handleTemplateSave(name, options) })
+    template
+      .command('use')
+      .description('Render a template and output/copy')
+      .argument('<name>', 'Template name')
+      .option('--vars <kvs...>', 'Variables as key=value pairs')
+      .option('--auto', 'Auto-fill variables from env/system/git/clipboard')
+      .option('--no-prompt', 'Do not prompt for missing required variables')
+      .option('--copy', 'Copy rendered output to clipboard')
+      .option('--out <file>', 'Write rendered output to file')
+      .action(async (name, options) => { await this.handleTemplateUse(name, options) })
+    template
+      .command('list')
+      .description('List templates')
+      .option('--json', 'Output JSON details')
+      .action(async (options) => { await this.handleTemplateList(options) })
+    template
+      .command('delete')
+      .description('Delete a template')
+      .argument('<name>', 'Template name')
+      .action(async (name) => { await this.handleTemplateDelete(name) })
+
+    // Unified search
+    this.program
+      .command('search')
+      .description('Search history/templates/snippets')
+      .argument('<query>', 'Search text')
+      .option('--history', 'Search history')
+      .option('--templates', 'Search templates')
+      .option('--snippets', 'Search snippets')
+      .option('--tag <t>', 'Filter by tag (library/history)')
+      .option('--body', 'Include body (history)')
+      .option('--json', 'Output JSON')
+      .action(async (query, options) => { await this.handleSearch(query, options) })
+
+    // Pick command (fzf integration with fallback)
+    this.program
+      .command('pick')
+      .description('Interactive picker for templates/snippets')
+      .option('--templates', 'Pick from templates')
+      .option('--snippets', 'Pick from snippets')
+      .action(async (options) => { await this.handlePick(options) })
+
+    // Tag library items
+    const tag = this.program.command('tag').description('Manage tags for templates/snippets')
+    tag
+      .command('add')
+      .description('Add tags to a library item')
+      .requiredOption('--type <type>', 'template|snippet')
+      .argument('<name>', 'Item name')
+      .argument('<tags>', 'Comma separated tags')
+      .action(async (name, tags, opts) => { await this.handleTagAdd(opts.type, name, tags) })
+    tag
+      .command('remove')
+      .description('Remove tags from a library item')
+      .requiredOption('--type <type>', 'template|snippet')
+      .argument('<name>', 'Item name')
+      .argument('<tags>', 'Comma separated tags')
+      .action(async (name, tags, opts) => { await this.handleTagRemove(opts.type, name, tags) })
   }
 
   async handlePaste (options) {
@@ -479,6 +579,32 @@ class CLI {
     })
 
     try {
+      if (options.tagAdd || options.tagRemove) {
+        const tags = (options.tags || '').split(',').map(s => s.trim()).filter(Boolean)
+        if (!tags.length) throw new Error('No tags provided. Use --tags tag1,tag2')
+        if (options.tagAdd) {
+          const updated = await history.addTags(options.tagAdd, tags)
+          console.log(`Tags now on ${options.tagAdd}: ${updated.join(',')}`)
+          return
+        }
+        if (options.tagRemove) {
+          const updated = await history.removeTags(options.tagRemove, tags)
+          console.log(`Tags now on ${options.tagRemove}: ${updated.join(',')}`)
+          return
+        }
+      }
+
+      if (options.search) {
+        const items = await history.search(options.search, { tag: options.tag, body: !!options.body })
+        if (!items.length) { console.log('No matches'); return }
+        for (const item of items) {
+          const preview = item.preview && item.preview.length > 60 ? item.preview.slice(0, 60) + '…' : item.preview
+          const tagStr = Array.isArray(item.tags) && item.tags.length ? ` [${item.tags.join(',')}]` : ''
+          console.log(`${item.id}  ${item.ts}  len=${item.len}  sha=${item.sha256.slice(0, 8)}  ${JSON.stringify(preview)}${tagStr}`)
+        }
+        return
+      }
+
       if (options.clear) {
         await history.clear()
         console.log('History cleared')
@@ -509,6 +635,287 @@ class CLI {
       }
     } catch (error) {
       console.error('Error handling history:', error.message)
+      process.exit(1)
+    }
+  }
+
+  async handleSnippetAdd (name, options) {
+    try {
+      let content = options.text
+      if (options.from) {
+        const fs = require('fs')
+        content = fs.readFileSync(options.from, 'utf8')
+      }
+      if (!content) throw new Error('Provide --text or --from <file>')
+      const p = await this.library.addSnippet(name, content)
+      console.log(`Saved snippet to: ${p}`)
+    } catch (e) {
+      console.error('Error:', e.message)
+      process.exit(1)
+    }
+  }
+
+  async handleSnippetCopy (name) {
+    try {
+      const snip = await this.library.getSnippet(name)
+      await this.clipboardManager.writeText(snip.content)
+      console.log(`Copied snippet '${name}' to clipboard`)
+    } catch (e) {
+      console.error('Error:', e.message)
+      process.exit(1)
+    }
+  }
+
+  async handleSnippetList () {
+    const list = await this.library.listSnippets()
+    if (!list.length) { console.log('No snippets found'); return }
+    for (const item of list) console.log(item.name)
+  }
+
+  async handleSnippetDelete (name) {
+    try {
+      await this.library.deleteSnippet(name)
+      console.log(`Deleted snippet '${name}'`)
+    } catch (e) {
+      console.error('Error:', e.message)
+      process.exit(1)
+    }
+  }
+
+  async handleTemplateSave (name, options) {
+    try {
+      let content = ''
+      if (options.from) {
+        const fs = require('fs')
+        content = fs.readFileSync(options.from, 'utf8')
+      } else if (options.fromClipboard) {
+        content = await this.clipboardManager.readText()
+      } else {
+        throw new Error('Provide --from <file> or --from-clipboard')
+      }
+      const p = await this.library.saveTemplate(name, content)
+      console.log(`Saved template to: ${p}`)
+    } catch (e) {
+      console.error('Error:', e.message)
+      process.exit(1)
+    }
+  }
+
+  parseKeyVals (arr = []) {
+    const out = {}
+    for (const kv of arr) {
+      const idx = kv.indexOf('=')
+      if (idx === -1) continue
+      const k = kv.slice(0, idx)
+      const v = kv.slice(idx + 1)
+      out[k] = v
+    }
+    return out
+  }
+
+  async handleTemplateUse (name, options) {
+    try {
+      const { parseFrontMatter } = require('./utils/template')
+      const { getAutoVars } = require('./utils/autovars')
+      const t = await this.library.getTemplate(name)
+      const { meta, body } = parseFrontMatter(t.content)
+      const vars = this.parseKeyVals(options.vars)
+      if (options.auto) {
+        const auto = await getAutoVars({ clipboardManager: this.clipboardManager })
+        Object.assign(vars, auto)
+      }
+      // Check required
+      const required = Array.isArray(meta.required) ? meta.required : []
+      let missing = required.filter(k => vars[k] == null || vars[k] === '')
+      if (missing.length) {
+        if (options.prompt === false) {
+          throw new Error(`Missing required variables: ${missing.join(', ')}`)
+        }
+        if (!process.stdin.isTTY) {
+          throw new Error(`Missing required variables (non-interactive): ${missing.join(', ')}`)
+        }
+        const readline = require('readline')
+        const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
+        const ask = (q) => new Promise(resolve => rl.question(q, ans => resolve(ans)))
+        for (const key of missing) {
+          const val = await ask(`${key}: `)
+          vars[key] = val
+        }
+        rl.close()
+        missing = required.filter(k => vars[k] == null || vars[k] === '')
+        if (missing.length) {
+          throw new Error(`Missing required variables: ${missing.join(', ')}`)
+        }
+      }
+      const rendered = renderTemplate(body, vars)
+      if (options.out) {
+        const fs = require('fs')
+        require('fs').mkdirSync(require('path').dirname(options.out), { recursive: true })
+        fs.writeFileSync(options.out, rendered, 'utf8')
+        console.log(`Wrote rendered template to: ${options.out}`)
+        return
+      }
+      if (options.copy) {
+        await this.clipboardManager.writeText(rendered)
+        console.log(`Copied rendered template '${name}' to clipboard`)
+        return
+      }
+      process.stdout.write(rendered)
+    } catch (e) {
+      console.error('Error:', e.message)
+      process.exit(1)
+    }
+  }
+
+  async handleTemplateList (options = {}) {
+    const list = await this.library.listTemplates()
+    if (!list.length) { console.log('No templates found'); return }
+    if (options.json) {
+      const out = []
+      const { parseFrontMatter } = require('./utils/template')
+      const fs = require('fs')
+      const idx = await this.library._loadIndex('template')
+      for (const item of list) {
+        let meta = {}
+        try { const txt = fs.readFileSync(item.path, 'utf8'); meta = parseFrontMatter(txt).meta || {} } catch {}
+        const idxTags = (idx[item.name] && Array.isArray(idx[item.name].tags)) ? idx[item.name].tags : []
+        const tags = Array.from(new Set([...(meta.tags || []), ...idxTags]))
+        out.push({ name: item.name, tags, description: meta.description || '' })
+      }
+      process.stdout.write(JSON.stringify(out))
+      return
+    }
+    const { parseFrontMatter } = require('./utils/template')
+    const fs = require('fs')
+    const idx = await this.library._loadIndex('template')
+    for (const item of list) {
+      let line = item.name
+      try {
+        const txt = fs.readFileSync(item.path, 'utf8')
+        const { meta } = parseFrontMatter(txt)
+        const desc = meta.description
+        const fmTags = Array.isArray(meta.tags) ? meta.tags : []
+        const idxTags = (idx[item.name] && Array.isArray(idx[item.name].tags)) ? idx[item.name].tags : []
+        const tags = Array.from(new Set([...fmTags, ...idxTags]))
+        if (desc) line += ` - ${desc}`
+        if (tags.length) line += ` [${tags.join(',')}]`
+      } catch {}
+      console.log(line)
+    }
+  }
+
+  async handleTemplateDelete (name) {
+    try {
+      await this.library.deleteTemplate(name)
+      console.log(`Deleted template '${name}'`)
+    } catch (e) {
+      console.error('Error:', e.message)
+      process.exit(1)
+    }
+  }
+
+  async handleSearch (query, options) {
+    try {
+      const targets = {
+        history: !!options.history,
+        templates: !!options.templates,
+        snippets: !!options.snippets
+      }
+      if (!targets.history && !targets.templates && !targets.snippets) targets.history = true
+
+      const results = { history: [], templates: [], snippets: [] }
+      if (targets.history) {
+        const history = new HistoryStore({})
+        const items = await history.search(query, { tag: options.tag, body: !!options.body })
+        results.history = items
+        if (!options.json) {
+          for (const item of items) {
+            const preview = item.preview && item.preview.length > 60 ? item.preview.slice(0, 60) + '…' : item.preview
+            const tagStr = Array.isArray(item.tags) && item.tags.length ? ` [${item.tags.join(',')}]` : ''
+            console.log(`[history] ${item.id} ${item.ts} ${JSON.stringify(preview)}${tagStr}`)
+          }
+        }
+      }
+      if (targets.templates) {
+        const res = await this.library.search({ query, tag: options.tag, target: 'templates', body: !!options.body })
+        results.templates = res
+        if (!options.json) for (const r of res) console.log(`[template] ${r.name}${r.tags.length ? ' [' + r.tags.join(',') + ']' : ''}`)
+      }
+      if (targets.snippets) {
+        const res = await this.library.search({ query, tag: options.tag, target: 'snippets', body: !!options.body })
+        results.snippets = res
+        if (!options.json) for (const r of res) console.log(`[snippet] ${r.name}${r.tags.length ? ' [' + r.tags.join(',') + ']' : ''}`)
+      }
+      if (options.json) {
+        process.stdout.write(JSON.stringify(results))
+      }
+    } catch (e) {
+      console.error('Error:', e.message)
+      process.exit(1)
+    }
+  }
+
+  async handlePick (options) {
+    const target = options.templates ? 'templates' : 'snippets'
+    const list = await this.library.search({ query: '', target })
+    if (!list.length) { console.log(`No ${target} found`); return }
+    // Try fzf
+    const { spawnSync } = require('child_process')
+    try {
+      const isWin = process.platform === 'win32'
+      let args = ['--height', '80%', '--layout=reverse', '--border']
+      let input
+      if (!isWin && options.preview !== false) {
+        input = list.map(i => `${i.name}\t${i.path}`).join('\n')
+        const preview = 'sh -c ' + '\'p=$(printf %s {} | cut -f2); sed -n 1,120p "$p"\''
+        args = args.concat(['--with-nth', '1', '--delimiter', '\t', '--preview', preview])
+      } else {
+        input = list.map(i => i.name).join('\n')
+      }
+      const res = spawnSync('fzf', args, { input, encoding: 'utf8' })
+      const selLine = (res.stdout || '').trim()
+      if (selLine) {
+        const name = selLine.includes('\t') ? selLine.split('\t')[0] : selLine
+        console.log(name)
+        return
+      }
+    } catch {}
+    // Fallback simple menu
+    if (!process.stdin.isTTY) {
+      console.log(list.map((i, idx) => `${idx + 1}. ${i.name}`).join('\n'))
+      return
+    }
+    console.log('Select an item:')
+    list.forEach((i, idx) => console.log(`${idx + 1}. ${i.name}`))
+    process.stdout.write('Enter number: ')
+    await new Promise((resolve) => {
+      process.stdin.once('data', (buf) => {
+        const n = parseInt(String(buf).trim(), 10)
+        if (Number.isInteger(n) && n >= 1 && n <= list.length) console.log(list[n - 1].name)
+        resolve()
+      })
+    })
+  }
+
+  async handleTagAdd (type, name, tagsCsv) {
+    try {
+      const tags = tagsCsv.split(',').map(s => s.trim()).filter(Boolean)
+      if (!tags.length) throw new Error('Provide at least one tag')
+      const updated = await this.library.addTags(type === 'template' ? 'template' : 'snippet', name, tags)
+      console.log(`Tags now on ${type} '${name}': ${updated.join(',')}`)
+    } catch (e) {
+      console.error('Error:', e.message)
+      process.exit(1)
+    }
+  }
+
+  async handleTagRemove (type, name, tagsCsv) {
+    try {
+      const tags = tagsCsv.split(',').map(s => s.trim()).filter(Boolean)
+      const updated = await this.library.removeTags(type === 'template' ? 'template' : 'snippet', name, tags)
+      console.log(`Tags now on ${type} '${name}': ${updated.join(',')}`)
+    } catch (e) {
+      console.error('Error:', e.message)
       process.exit(1)
     }
   }

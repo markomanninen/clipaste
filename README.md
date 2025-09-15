@@ -362,6 +362,8 @@ Additional Phase 2 files:
 src/
 ├── watcher.js       # Polling-based clipboard watcher
 └── historyStore.js  # JSON-backed clipboard history with pruning
+├── libraryStore.js  # Templates/snippets storage and tags (Phase 4A)
+└── utils/template.js # Minimal renderer and auto vars (Phase 4A)
 
 tests/
 ├── watcher.test.js        # Watcher unit tests (filter/exec/stop)
@@ -404,3 +406,17 @@ Captions below each demo. To render locally: run `npm run demo:render` or `vhs d
 - Phase 2 (refined): ENHANCEMENT_PLAN_PHASE_2.md
 - Phase 3 (integration features): ENHANCEMENT_PLAN_PHASE_3.md
 - Phase 3B (copy image to clipboard): ENHANCEMENT_PLAN_PHASE_3B.md
+
+## Phase 4A features
+
+Captions below each demo. Render locally with `npm run demo:render` (requires `vhs`).
+
+### 1. Snippets: add and copy
+
+- Caption: Save a named snippet and copy it to the clipboard.
+- Demo: docs/demos/clipaste-phase4a-snippets.gif
+
+### 2. Templates: save and use
+
+- Caption: Save a template and render with variables, copying the output.
+- Demo: docs/demos/clipaste-phase4a-templates.gif

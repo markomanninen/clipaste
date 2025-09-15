@@ -166,7 +166,7 @@ clipaste organize --by-date            # Organize saved items
    - Interactive confirmation: `clipaste clear --confirm`
    - Handle already-empty clipboard gracefully
 
-### Medium Priority (Phase 2)
+### Medium Priority (Phase 2) - COMPLETED
 
 1. **clipaste watch** - Real-time monitoring
 2. **clipaste history** - Clipboard history management
@@ -174,9 +174,17 @@ clipaste organize --by-date            # Organize saved items
 
 ### Low Priority (Phase 3-4)
 
-1. Image transformations and advanced processing
+1. Image transformations and advanced processing - COMPLETED
 2. Cloud sync and backup features
 3. Template and snippet system
+
+---
+
+Further Phase 4 planning is split into dedicated docs:
+
+- Phase 4A: Templates, Snippets, Search/Tags — see `ENHANCEMENT_PLAN_PHASE_4A.md`
+- Phase 4B: AI Plugin (opt-in) — see `ENHANCEMENT_PLAN_PHASE_4B.md`
+- Phase 4C: Cloud/Backup Plugin — see `ENHANCEMENT_PLAN_PHASE_4C.md`
 
 ## Technical Considerations
 

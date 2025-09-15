@@ -100,6 +100,7 @@ class Watcher {
     }
 
     this._timer = setInterval(onTick, this.interval)
+    if (typeof this._timer.unref === 'function') this._timer.unref()
     // Immediate first tick
     onTick()
   }

@@ -9,6 +9,7 @@ function sha256 (text) {
 }
 
 function getConfigDir () {
+  if (process.env.CLIPASTE_CONFIG_DIR) return process.env.CLIPASTE_CONFIG_DIR
   const platform = process.platform
   if (platform === 'darwin') {
     return path.join(os.homedir(), 'Library', 'Application Support', 'clipaste')
@@ -101,7 +102,9 @@ class HistoryStore {
       sha256: sha256(content),
       len: content.length,
       preview: this._preview(content),
-      content
+      content,
+      // optional metadata fields
+      tags: []
     }
 
     this._data.push(entry)
@@ -120,6 +123,44 @@ class HistoryStore {
 
     await this._save()
     return entry
+  }
+
+  async addTags (id, tags) {
+    await this._load()
+    const entry = this._data.find(e => e.id === id)
+    if (!entry) throw new Error('History item not found')
+    if (!Array.isArray(entry.tags)) entry.tags = []
+    const set = new Set(entry.tags)
+    for (const t of (tags || [])) if (t) set.add(String(t))
+    entry.tags = Array.from(set)
+    await this._save()
+    return entry.tags
+  }
+
+  async removeTags (id, tags) {
+    await this._load()
+    const entry = this._data.find(e => e.id === id)
+    if (!entry) throw new Error('History item not found')
+    if (!Array.isArray(entry.tags)) return []
+    const remove = new Set((tags || []).map(String))
+    entry.tags = entry.tags.filter(t => !remove.has(t))
+    await this._save()
+    return entry.tags
+  }
+
+  async search (query, opts = {}) {
+    await this._load()
+    const q = (query || '').toLowerCase()
+    const tag = opts.tag
+    const inBody = !!opts.body
+    return this._data
+      .filter(e => {
+        const matchesTag = tag ? Array.isArray(e.tags) && e.tags.includes(tag) : true
+        if (!q) return matchesTag
+        const hay = (e.preview || '') + (inBody ? ('\n' + (e.content || '')) : '')
+        return matchesTag && hay.toLowerCase().includes(q)
+      })
+      .map(({ id, ts, sha256: h, len, preview, tags }) => ({ id, ts, sha256: h, len, preview, tags }))
   }
 
   async list () {
