@@ -65,6 +65,7 @@ clipaste paste   # Automatically saves as .png with proper format
 - **Dry-run mode** - Preview operations without creating files
 - **Multiple output formats** - Support for various image formats with quality control
 - **Permanent archiving** - Never lose clipboard content when it's overwritten
+- **Optional AI assistance** - Summarize, classify, or transform text via local-first providers
 
 ## Installation
 
@@ -227,6 +228,52 @@ clipaste copy --decode-base64 "aGk=" # Decode from base64 and copy
 # Auto extension for text/image on paste
 clipaste paste --auto-extension --filename note   # picks .json/.md/.sh/.js/.txt
 ```
+
+### AI Commands (Optional)
+
+The AI plugin is opt-in and defaults to local providers. With no configuration, `clipaste` targets an Ollama instance at `http://localhost:11434` using the `llama3.2:1b` model.
+
+```bash
+# Summarize clipboard text and copy the result back
+clipaste ai summarize --copy
+
+# Classify a file's contents with custom labels
+clipaste ai classify --source file --file notes.txt --labels "bug,feature,question"
+
+# Transform stdin with an instruction and emit JSON metadata
+cat draft.txt | clipaste ai transform --source stdin --instruction "rewrite as bullet list" --json
+```
+
+![clipaste ai commands](docs/demos/clipaste-phase4b-ai.gif)
+
+Useful flags:
+
+- `--provider <name>` / `--model <id>` to override defaults. Local adapters (`ollama`, `lmstudio`) run entirely offline. Cloud adapters require `--consent` or enabling `ai.networkConsent` in config.
+- `--redact <rules>` (comma separated) or `--no-redact` to control preprocessing before any data leaves your machine. Built-in rules include `emails`, `keys`, `jwt`, `ipv4`, `ipv6`, and `paths`.
+- `--copy`, `--out <file>`, and `--json` to reuse familiar output flows.
+
+Configuration lives alongside other clipaste data (`~/.config/clipaste/config.json` on Linux, `%APPDATA%/clipaste/config.json` on Windows, `~/Library/Application Support/clipaste/config.json` on macOS). Example:
+
+```jsonc
+{
+  "ai": {
+    "defaultProvider": "ollama",
+    "defaultModel": "llama3.2:1b",
+    "networkConsent": false,
+    "providers": {
+      "ollama": {
+        "endpoint": "http://localhost:11434"
+      }
+    },
+    "redaction": {
+      "enabled": true,
+      "rules": ["emails", "keys", "jwt", "ipv4", "ipv6", "paths"]
+    }
+  }
+}
+```
+
+Set `"redaction": { "enabled": false }` to opt out of masking.
 
 ### Watch and History
 
