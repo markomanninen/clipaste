@@ -859,25 +859,27 @@ class CLI {
     const target = options.templates ? 'templates' : 'snippets'
     const list = await this.library.search({ query: '', target })
     if (!list.length) { console.log(`No ${target} found`); return }
-    // Try fzf
+    // Try fzf only in interactive TTY
     const { spawnSync } = require('child_process')
     try {
-      const isWin = process.platform === 'win32'
-      let args = ['--height', '80%', '--layout=reverse', '--border']
-      let input
-      if (!isWin && options.preview !== false) {
-        input = list.map(i => `${i.name}\t${i.path}`).join('\n')
-        const preview = 'sh -c ' + '\'p=$(printf %s {} | cut -f2); sed -n 1,120p "$p"\''
-        args = args.concat(['--with-nth', '1', '--delimiter', '\t', '--preview', preview])
-      } else {
-        input = list.map(i => i.name).join('\n')
-      }
-      const res = spawnSync('fzf', args, { input, encoding: 'utf8' })
-      const selLine = (res.stdout || '').trim()
-      if (selLine) {
-        const name = selLine.includes('\t') ? selLine.split('\t')[0] : selLine
-        console.log(name)
-        return
+      if (process.stdin.isTTY && process.stdout.isTTY) {
+        const isWin = process.platform === 'win32'
+        let args = ['--height', '80%', '--layout=reverse', '--border']
+        let input
+        if (!isWin && options.preview !== false) {
+          input = list.map(i => `${i.name}\t${i.path}`).join('\n')
+          const preview = 'p=$(printf %s {} | cut -f2); sed -n 1,120p "$p"'
+          args = args.concat(['--with-nth', '1', '--delimiter', '\t', '--preview', preview])
+        } else {
+          input = list.map(i => i.name).join('\n')
+        }
+        const res = spawnSync('fzf', args, { input, encoding: 'utf8' })
+        const selLine = (res.stdout || '').trim()
+        if (selLine) {
+          const name = selLine.includes('\t') ? selLine.split('\t')[0] : selLine
+          console.log(name)
+          return
+        }
       }
     } catch {}
     // Fallback simple menu
@@ -892,6 +894,7 @@ class CLI {
       process.stdin.once('data', (buf) => {
         const n = parseInt(String(buf).trim(), 10)
         if (Number.isInteger(n) && n >= 1 && n <= list.length) console.log(list[n - 1].name)
+        if (typeof process.stdin.pause === 'function') process.stdin.pause()
         resolve()
       })
     })

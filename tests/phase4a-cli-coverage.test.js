@@ -81,9 +81,15 @@ describe('Phase 4A: CLI coverage targets', () => {
     fs.writeFileSync(path.join(tdir, 'two.tmpl'), 'Two', 'utf8')
     // mock spawnSync to emulate fzf selection
     jest.spyOn(require('child_process'), 'spawnSync').mockReturnValue({ stdout: 'pickfzf/one\n' })
+    const origIn = global.process.stdin
+    const origOut = global.process.stdout
+    global.process.stdin = { ...global.process.stdin, isTTY: true }
+    global.process.stdout = { ...global.process.stdout, isTTY: true, write: jest.fn() }
     await cli.handlePick({ templates: true })
     const lines = (global.console.log.mock.calls || []).map(c => c.join(' ')).join('\n')
     expect(lines.trim().endsWith('pickfzf/one')).toBe(true)
+    global.process.stdin = origIn
+    global.process.stdout = origOut
   })
 
   it('pick interactive fallback (TTY) reads a number and prints selected name', async () => {
