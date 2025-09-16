@@ -22,8 +22,8 @@ jest.mock('commander', () => {
         commands: mockCommands,
         name: jest.fn().mockReturnThis(),
         description: jest.fn().mockReturnThis(),
-       version: jest.fn().mockReturnThis(),
-       command (name) {
+        version: jest.fn().mockReturnThis(),
+        command (name) {
           const cmd = {}
           cmd._name = name
           cmd.name = () => name
