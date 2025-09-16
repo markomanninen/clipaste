@@ -17,7 +17,7 @@
     "test:docker": "./scripts/test-docker.sh",
     "lint": "eslint src/ tests/",
     "lint:fix": "eslint src/ tests/ --fix",
-    "demo:render": "vhs docs/demos/clipaste-basics.tape && vhs docs/demos/clipaste-watch-exec.tape && vhs docs/demos/clipaste-phase3-transforms.tape && vhs docs/demos/clipaste-phase3-auto-extension.tape && vhs docs/demos/clipaste-phase3-image-resize.tape && vhs docs/demos/clipaste-phase4a-snippets.tape && vhs docs/demos/clipaste-phase4a-templates.tape && vhs docs/demos/clipaste-phase4a-pick.tape && vhs docs/demos/clipaste-phase4a-search.tape && vhs docs/demos/clipaste-phase4b-ai.tape",
+    "demo:render": "vhs docs/demos/clipaste-basics.tape && vhs docs/demos/clipaste-watch-exec.tape && vhs docs/demos/clipaste-phase3-transforms.tape && vhs docs/demos/clipaste-phase3-auto-extension.tape && vhs docs/demos/clipaste-phase3-image-resize.tape && vhs docs/demos/clipaste-phase4a-snippets.tape && vhs docs/demos/clipaste-phase4a-templates.tape && vhs docs/demos/clipaste-phase4a-pick.tape && vhs docs/demos/clipaste-phase4a-search.tape && vhs docs/demos/clipaste-phase4b-ai.tape && vhs docs/demos/clipaste-randomizer.tape",
     "demo:render:watch": "vhs docs/demos/clipaste-watch-exec.tape",
     "demo:render:all": "npm run demo:render",
     "prepublishOnly": "npm test && npm run lint",
