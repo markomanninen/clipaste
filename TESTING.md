@@ -284,3 +284,12 @@ The test suite covers:
 - ✅ Integration workflows
 
 Target coverage: **100%** for core functionality.
+
+## NPM Publish Cycle
+
+```bash
+git checkout main
+git pull origin main
+npm version patch
+npm publish
+```
