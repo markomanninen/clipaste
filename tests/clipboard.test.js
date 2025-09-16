@@ -14,6 +14,7 @@ const originalEnv = process.env
 function setupNonHeadlessEnv () {
   process.env = { ...originalEnv }
   delete process.env.CI
+  delete process.env.GITHUB_ACTIONS
   delete process.env.HEADLESS
   delete process.env.XVFB_RUN
   if (process.platform !== 'win32') {
@@ -24,6 +25,7 @@ function setupNonHeadlessEnv () {
 function setupHeadlessEnv () {
   process.env = { ...originalEnv }
   process.env.CI = 'true'
+  process.env.GITHUB_ACTIONS = 'true'
 }
 
 describe('ClipboardManager', () => {
