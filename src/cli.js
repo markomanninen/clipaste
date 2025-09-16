@@ -39,7 +39,9 @@ class CLI {
       fileHandler: this.fileHandler,
       library: this.library,
       history: {
-        record: async ({ content, type, meta, tags, persist } = {}) => {
+        record: async (params = {}) => {
+          if (typeof params !== 'object' || params === null) params = {}
+          const { content, type, meta, tags, persist } = params
           if (typeof content !== 'string' || content.length === 0) return null
           const options = {
             type,

@@ -75,6 +75,29 @@ describe('PluginManager', () => {
     ])
   })
 
+  it('logs sanitized warning when plugin register promise rejects', async () => {
+    const asyncPlugin = {
+      name: 'async-plugin',
+      register: () => Promise.reject(new Error('super secret message'))
+    }
+
+    jest.doMock('clipaste-async-plugin', () => asyncPlugin, { virtual: true })
+
+    const warn = jest.fn()
+    const manager = new PluginManager({
+      program: new Command(),
+      services: baseServices,
+      config: { plugins: ['clipaste-async-plugin'] },
+      logger: { warn }
+    })
+
+    manager.loadConfiguredPlugins()
+    // Allow promise rejection microtask to flush
+    await Promise.resolve()
+
+    expect(warn).toHaveBeenCalledWith('[clipaste] Plugin clipaste-async-plugin registration rejected.')
+  })
+
   it('can load a plugin from a relative path (clipaste-randomizer)', () => {
     const manager = new PluginManager({
       program: new Command(),

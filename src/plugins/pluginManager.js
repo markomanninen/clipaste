@@ -83,8 +83,8 @@ class PluginManager {
       }
       const result = plugin.register(context)
       if (result && typeof result.then === 'function') {
-        result.catch(err => {
-          this.logger?.warn?.(`[clipaste] Plugin ${id} registration rejected: ${err.message}`)
+        result.catch(() => {
+          this.logger?.warn?.(`[clipaste] Plugin ${id} registration rejected.`)
         })
       }
 
@@ -96,7 +96,7 @@ class PluginManager {
       return true
     } catch (error) {
       this.failedPlugins.push({ id, reason: error.message })
-      this.logger?.warn?.(`[clipaste] Plugin ${id} threw during registration: ${error.message}`)
+      this.logger?.warn?.(`[clipaste] Plugin ${id} threw during registration.`)
       return false
     }
   }
