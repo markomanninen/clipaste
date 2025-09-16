@@ -76,7 +76,7 @@
     "uuid": "^9.0.0"
   },
   "optionalDependencies": {
-    "clipaste-randomizer": "^0.0.2"
+    "clipaste-randomizer": "^0.0.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
