@@ -13,7 +13,7 @@ npm link          # Create global symlink
 ### Option 2: Install from npm (when published)
 
 ```bash
-npm install -g cli-clipboard-paste
+npm install -g clipaste
 ```
 
 ### Option 3: Use without global install
