@@ -45,7 +45,7 @@
     "command-line",
     "terminal"
   ],
-  "author": "Marko Manninen <marko.manninen@gmail.com>",
+  "author": "Marko Manninen <elonmedia@gmail.com>",
   "license": "MIT",
   "homepage": "https://github.com/markomanninen/clipaste#readme",
   "repository": {
@@ -76,7 +76,7 @@
     "uuid": "^9.0.0"
   },
   "optionalDependencies": {
-    "clipaste-randomizer": "file:../clipaste-randomizer"
+    "clipaste-randomizer": "^0.0.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
