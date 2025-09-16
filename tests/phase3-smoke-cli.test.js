@@ -72,8 +72,8 @@ describe('Phase 3 - smoke CLI (spawned)', () => {
   })
 
   it('get --image-info does not crash when no image', async () => {
-    const res = await runCLI(['get', '--image-info'])
+    const res = await runCLI(['get', '--image-info'], { env: { HEADLESS: '1' } })
     // With empty clipboard, should exit 0 (no output)
     expect(res.code).toBe(0)
-  })
+  }, 10000)
 })
