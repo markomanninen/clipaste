@@ -7,10 +7,11 @@ const Watcher = require('./watcher')
 const HistoryStore = require('./historyStore')
 const LibraryStore = require('./libraryStore')
 const { renderTemplate } = require('./utils/template')
-const { version } = require('../package.json')
+const pkg = require('../package.json')
 const { isHeadlessEnvironment } = require('./utils/environment')
 const AIManager = require('./ai/manager')
 const { makeSummarizePrompt, makeClassifyPrompt, makeTransformPrompt } = require('./ai/prompts')
+const PluginManager = require('./plugins/pluginManager')
 
 class CLI {
   constructor () {
@@ -19,14 +20,82 @@ class CLI {
     this.fileHandler = new FileHandler()
     this.library = new LibraryStore()
     this.aiManager = new AIManager()
+    this.historyStore = new HistoryStore()
+    this.packageInfo = pkg
+    this.pluginManager = new PluginManager({
+      program: this.program,
+      services: this.createPluginServices(),
+      config: pkg.clipaste || {},
+      logger: console
+    })
     this.setupCommands()
+    this.setupPluginDiagnostics()
+    this.pluginManager.loadConfiguredPlugins()
+  }
+
+  createPluginServices () {
+    return {
+      clipboard: this.clipboardManager,
+      fileHandler: this.fileHandler,
+      library: this.library,
+      history: {
+        record: async ({ content, type, meta, tags, persist } = {}) => {
+          if (typeof content !== 'string' || content.length === 0) return null
+          const options = {
+            type,
+            meta,
+            tags,
+            persist
+          }
+          return this.historyStore.addEntry(content, options)
+        }
+      },
+      ai: this.aiManager,
+      utils: {
+        renderTemplate,
+        isHeadlessEnvironment
+      }
+    }
+  }
+
+  setupPluginDiagnostics () {
+    this.program
+      .command('plugins')
+      .description('List Clipaste plugin status and installation hints')
+      .action(() => {
+        const status = this.pluginManager?.getStatus?.() || { loaded: [], failed: [] }
+
+        if (status.loaded.length === 0) {
+          console.log('No plugins loaded.')
+        } else {
+          console.log('Loaded plugins:')
+          for (const plugin of status.loaded) {
+            const version = plugin.version ? ` v${plugin.version}` : ''
+            console.log(`- ${plugin.name}${version}`)
+          }
+        }
+
+        if (status.failed.length > 0) {
+          console.log('\nPlugins not loaded:')
+          for (const item of status.failed) {
+            console.log(`- ${item.id}: ${item.reason}`)
+          }
+        }
+
+        const configured = this.packageInfo?.clipaste?.plugins || []
+        if (configured.length > 0) {
+          console.log(`\nConfigured plugins: ${configured.join(', ')}`)
+        }
+
+        console.log('\nInstall plugins with `npm install clipaste-randomizer` or set CLIPASTE_PLUGINS to a comma-separated list.')
+      })
   }
 
   setupCommands () {
     this.program
       .name('clipaste')
       .description('CLI tool to paste clipboard content to files')
-      .version(version)
+      .version(this.packageInfo.version)
 
     // Main paste command
     this.program

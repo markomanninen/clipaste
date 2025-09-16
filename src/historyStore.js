@@ -85,11 +85,12 @@ class HistoryStore {
     return this._data.reduce((sum, e) => sum + Buffer.byteLength(e.content || '', 'utf8'), 0)
   }
 
-  async addEntry (content) {
+  async addEntry (content, opts = {}) {
     await this._load()
 
     if (typeof content !== 'string' || content.length === 0) return null
 
+    const tagSet = new Set((opts.tags || []).map(String).filter(Boolean))
     const bytes = Buffer.byteLength(content, 'utf8')
     if (bytes > this.maxItemSize) {
       if (this.verbose) console.error('[history] skip: item exceeds maxItemSize')
@@ -104,8 +105,11 @@ class HistoryStore {
       preview: this._preview(content),
       content,
       // optional metadata fields
-      tags: []
+      tags: Array.from(tagSet)
     }
+
+    if (opts.type) entry.type = String(opts.type)
+    if (opts.meta && typeof opts.meta === 'object') entry.meta = opts.meta
 
     this._data.push(entry)
 
@@ -121,7 +125,9 @@ class HistoryStore {
       }
     }
 
-    await this._save()
+    if (this.persist && opts.persist !== false) {
+      await this._save()
+    }
     return entry
   }
 
