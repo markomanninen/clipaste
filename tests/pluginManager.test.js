@@ -1,4 +1,6 @@
 const { Command } = require('commander')
+const path = require('path')
+const fs = require('fs')
 const PluginManager = require('../src/plugins/pluginManager')
 
 describe('PluginManager', () => {
@@ -81,10 +83,20 @@ describe('PluginManager', () => {
       logger: { warn: jest.fn() }
     })
 
-    manager.loadPlugin('../clipaste-randomizer')
+    const relativeId = '../clipaste-randomizer'
+    const pluginDir = path.resolve(__dirname, '..', '..', 'clipaste-randomizer')
+
+    manager.loadPlugin(relativeId)
     const status = manager.getStatus()
 
-    expect(status.failed).toHaveLength(0)
-    expect(status.loaded[0]).toEqual(expect.objectContaining({ id: '../clipaste-randomizer' }))
+    if (!fs.existsSync(pluginDir)) {
+      expect(status.loaded).toHaveLength(0)
+      expect(status.failed).toEqual([
+        expect.objectContaining({ id: relativeId, reason: 'not installed' })
+      ])
+    } else {
+      expect(status.failed).toHaveLength(0)
+      expect(status.loaded[0]).toEqual(expect.objectContaining({ id: relativeId }))
+    }
   })
 })
