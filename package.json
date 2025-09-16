@@ -96,6 +96,6 @@
     ]
   },
   "optionalDependencies": {
-    "clipaste-randomizer": "^0.0.3"
+    "clipaste-randomizer": "^0.0.4"
   }
 }
