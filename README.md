@@ -6,7 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/node/v/clipaste.svg)](https://nodejs.org/)
 
-![clipaste](logos/clipaste-logo-wordmark.png)
+![clipaste](logos/clipaste.png)
 
 A cross-platform command-line tool for clipboard operations - paste, copy, and manage text and images with file persistence.
 
