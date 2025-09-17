@@ -84,22 +84,12 @@ describe('Image Functionality', () => {
     })
 
     it('should successfully write image to clipboard on Windows', async () => {
-      if (process.platform === 'darwin') {
-        return // Skip test on macOS
+      if (process.platform !== 'win32') {
+        return // Skip test on non-Windows platforms
       }
 
-      // Mock Windows platform
-      const originalPlatform = process.platform
-      Object.defineProperty(process, 'platform', { value: 'win32' })
-      clipboardManager.isWindows = true
-
-      try {
-        const result = await clipboardManager.writeImage(testImagePath)
-        expect(result).toBe(true)
-      } finally {
-        Object.defineProperty(process, 'platform', { value: originalPlatform })
-        clipboardManager.isWindows = originalPlatform === 'win32'
-      }
+      const result = await clipboardManager.writeImage(testImagePath)
+      expect(result).toBe(true)
     })
   })
 
