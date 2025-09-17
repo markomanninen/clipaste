@@ -20,7 +20,7 @@ describe('Phase 3 - transforms and options', () => {
     global.console = mockConsole
 
     originalProcess = global.process
-    mockProcess = { ...process, exit: jest.fn() }
+    mockProcess = { ...process, exit: jest.fn(), stdin: { ...process.stdin, isTTY: true }, env: { ...process.env } }
     global.process = mockProcess
 
     mockClipboard = {
@@ -124,5 +124,185 @@ describe('Phase 3 - transforms and options', () => {
 
     await cli.handlePaste({ output: '/out', filename: 'file', autoExtension: true })
     expect(mockFile.saveText).toHaveBeenCalledWith('{"k":1}', expect.objectContaining({ extension: '.json' }))
+  })
+
+  // STDIN TESTS - These would have caught the isTTY bug!
+  describe('stdin input with transforms', () => {
+    let originalStdin
+
+    beforeEach(() => {
+      originalStdin = process.stdin
+    })
+
+    afterEach(() => {
+      process.stdin = originalStdin
+    })
+
+    test('copy --encode-base64 with stdin input (isTTY undefined - real piping scenario)', async () => {
+      // This simulates the REAL piping scenario where isTTY is undefined
+      const testData = 'hello test'
+      process.stdin = {
+        isTTY: undefined, // KEY: this is what happens in real piping, not false!
+        setEncoding: jest.fn(),
+        on: jest.fn((event, callback) => {
+          if (event === 'data') {
+            // Simulate receiving data in chunks
+            process.nextTick(() => callback(testData))
+          }
+          if (event === 'end') {
+            process.nextTick(callback)
+          }
+        })
+      }
+
+      mockClipboard.writeText.mockResolvedValue(true)
+      await cli.handleCopy(null, { encodeBase64: true })
+
+      const expectedBase64 = Buffer.from(testData, 'utf8').toString('base64')
+      expect(mockClipboard.writeText).toHaveBeenCalledWith(expectedBase64)
+      // Check for either headless or normal output depending on environment
+      const expectedMessages = [
+        `Copied text to clipboard (${expectedBase64.length} characters)`,
+        `Copied text to clipboard (${expectedBase64.length} characters) (headless mode - simulated)`
+      ]
+      expect(expectedMessages).toContain(mockConsole.log.mock.calls[mockConsole.log.mock.calls.length - 1][0])
+    })
+
+    test('copy --encode-base64 with stdin input (isTTY false)', async () => {
+      // This simulates explicit false case
+      const testData = 'test data'
+      process.stdin = {
+        isTTY: false,
+        setEncoding: jest.fn(),
+        on: jest.fn((event, callback) => {
+          if (event === 'data') process.nextTick(() => callback(testData))
+          if (event === 'end') process.nextTick(callback)
+        })
+      }
+
+      mockClipboard.writeText.mockResolvedValue(true)
+      await cli.handleCopy(null, { encodeBase64: true })
+
+      const expectedBase64 = Buffer.from(testData, 'utf8').toString('base64')
+      expect(mockClipboard.writeText).toHaveBeenCalledWith(expectedBase64)
+    })
+
+    test('copy --decode-base64 with stdin input', async () => {
+      const inputText = 'hello world'
+      const inputBase64 = Buffer.from(inputText, 'utf8').toString('base64')
+
+      process.stdin = {
+        isTTY: undefined,
+        setEncoding: jest.fn(),
+        on: jest.fn((event, callback) => {
+          if (event === 'data') process.nextTick(() => callback(inputBase64))
+          if (event === 'end') process.nextTick(callback)
+        })
+      }
+
+      mockClipboard.writeText.mockResolvedValue(true)
+      await cli.handleCopy(null, { decodeBase64: true })
+
+      expect(mockClipboard.writeText).toHaveBeenCalledWith(inputText)
+      // Check for either headless or normal output depending on environment
+      const expectedMessages = [
+        `Copied text to clipboard (${inputText.length} characters)`,
+        `Copied text to clipboard (${inputText.length} characters) (headless mode - simulated)`
+      ]
+      expect(expectedMessages).toContain(mockConsole.log.mock.calls[mockConsole.log.mock.calls.length - 1][0])
+    })
+
+    test('copy --encode-base64 with empty stdin', async () => {
+      process.stdin = {
+        isTTY: undefined,
+        setEncoding: jest.fn(),
+        on: jest.fn((event, callback) => {
+          if (event === 'data') {
+            // No data chunks
+          }
+          if (event === 'end') process.nextTick(callback)
+        })
+      }
+
+      mockClipboard.writeText.mockResolvedValue(true)
+      await cli.handleCopy(null, { encodeBase64: true })
+
+      // Empty string encodes to empty string
+      expect(mockClipboard.writeText).toHaveBeenCalledWith('')
+      // Check for either headless or normal output depending on environment
+      const expectedMessages = [
+        'Copied text to clipboard (0 characters)',
+        'Copied text to clipboard (0 characters) (headless mode - simulated)'
+      ]
+      expect(expectedMessages).toContain(mockConsole.log.mock.calls[mockConsole.log.mock.calls.length - 1][0])
+    })
+
+    test('copy --decode-base64 with invalid base64 from stdin', async () => {
+      const invalidData = 'invalid-base64-content!'
+      process.stdin = {
+        isTTY: undefined,
+        setEncoding: jest.fn(),
+        on: jest.fn((event, callback) => {
+          if (event === 'data') process.nextTick(() => callback(invalidData))
+          if (event === 'end') process.nextTick(callback)
+        })
+      }
+
+      mockClipboard.writeText.mockResolvedValue(true)
+      await cli.handleCopy(null, { decodeBase64: true })
+
+      expect(mockConsole.error).toHaveBeenCalledWith('Invalid base64 input')
+      expect(mockProcess.exit).toHaveBeenCalledWith(1)
+    })
+
+    test('copy --encode-base64 with multiline stdin input', async () => {
+      const multilineData = 'line 1\nline 2\nline 3'
+      process.stdin = {
+        isTTY: undefined,
+        setEncoding: jest.fn(),
+        on: jest.fn((event, callback) => {
+          if (event === 'data') {
+            // Simulate receiving multiline data as one chunk
+            process.nextTick(() => callback(multilineData))
+          }
+          if (event === 'end') process.nextTick(callback)
+        })
+      }
+
+      mockClipboard.writeText.mockResolvedValue(true)
+      await cli.handleCopy(null, { encodeBase64: true })
+
+      const expectedBase64 = Buffer.from(multilineData, 'utf8').toString('base64')
+      expect(mockClipboard.writeText).toHaveBeenCalledWith(expectedBase64)
+    })
+
+    test('copy --encode-base64 falls back to direct argument when stdin not available', async () => {
+      // When isTTY is true (not piped), should use direct argument
+      process.stdin = {
+        isTTY: true, // Not piped
+        setEncoding: jest.fn(),
+        on: jest.fn()
+      }
+
+      mockClipboard.writeText.mockResolvedValue(true)
+      await cli.handleCopy('direct text', { encodeBase64: true })
+
+      const expectedBase64 = Buffer.from('direct text', 'utf8').toString('base64')
+      expect(mockClipboard.writeText).toHaveBeenCalledWith(expectedBase64)
+    })
+
+    test('copy --decode-base64 with direct argument when stdin not available', async () => {
+      process.stdin = {
+        isTTY: true,
+        setEncoding: jest.fn(),
+        on: jest.fn()
+      }
+
+      const inputBase64 = Buffer.from('test content', 'utf8').toString('base64')
+      mockClipboard.writeText.mockResolvedValue(true)
+      await cli.handleCopy(null, { decodeBase64: inputBase64 })
+
+      expect(mockClipboard.writeText).toHaveBeenCalledWith('test content')
+    })
   })
 })

@@ -165,23 +165,11 @@ describe('CLI Error Handling Tests', () => {
 
   describe('History Command Error Handling', () => {
     it('should handle empty history', async () => {
-      // Mock HistoryStore to return empty array (covers line 801-803)
-      const HistoryStore = require('../src/historyStore')
-      const originalHistoryStore = HistoryStore
-
-      const MockHistoryStore = jest.fn().mockImplementation(() => ({
-        list: jest.fn().mockResolvedValue([])
-      }))
-
-      require.cache[require.resolve('../src/historyStore')].exports = MockHistoryStore
-
+      // Test empty history by using persist: false (covers line 801-803)
       await cli.setupCommands()
-      await cli.handleHistory({})
+      await cli.handleHistory({ persist: false })
 
       expect(console.log).toHaveBeenCalledWith('History is empty')
-
-      // Restore original constructor
-      require.cache[require.resolve('../src/historyStore')].exports = originalHistoryStore
     })
   })
 

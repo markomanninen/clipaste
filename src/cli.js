@@ -141,7 +141,7 @@ class CLI {
       .argument('[text]', 'Text to copy to clipboard')
       .option('--file <path>', 'Copy file contents to clipboard')
       .option('--image <path>', 'Copy image file to clipboard')
-      .option('--decode-base64 <data>', 'Decode base64 to text and copy (stdin if present)')
+      .option('--decode-base64 [data]', 'Decode base64 to text and copy (stdin if present)')
       .option('--encode-base64 [data]', 'Encode input to base64 and copy (stdin if present)')
       .action(async (text, options) => {
         await this.handleCopy(text, options)
@@ -441,7 +441,7 @@ class CLI {
 
   async handleStatus () {
     try {
-      const isHeadless = isHeadlessEnvironment()
+      const isHeadless = isHeadlessEnvironment(true)
       const hasContent = await this.clipboardManager.hasContent()
 
       if (!hasContent) {
@@ -478,7 +478,7 @@ class CLI {
 
   async handleClear (options = {}) {
     try {
-      const isHeadless = isHeadlessEnvironment()
+      const isHeadless = isHeadlessEnvironment(true)
 
       // Check if clipboard has content first
       const hasContent = await this.clipboardManager.hasContent()
@@ -534,12 +534,21 @@ class CLI {
 
   async handleCopy (text, options) {
     try {
-      const isHeadless = isHeadlessEnvironment()
+      const isHeadless = isHeadlessEnvironment(true)
 
       if (options.decodeBase64 != null || options.encodeBase64 != null) {
         const chunks = []
-        const readFromStdin = (process.stdin && process.stdin.isTTY === false)
+        const readFromStdin = (process.stdin && process.stdin.isTTY !== true)
         const getInput = async () => {
+          // If we have explicit option values (not just true), use them first
+          if (options.decodeBase64 != null && options.decodeBase64 !== true) {
+            return String(options.decodeBase64)
+          }
+          if (options.encodeBase64 != null && options.encodeBase64 !== true) {
+            return String(options.encodeBase64)
+          }
+
+          // Then check for stdin input
           if (readFromStdin) {
             return await new Promise((resolve) => {
               process.stdin.setEncoding('utf8')
@@ -547,8 +556,10 @@ class CLI {
               process.stdin.on('end', () => resolve(chunks.join('')))
             })
           }
-          if (options.decodeBase64 != null) return String(options.decodeBase64)
-          if (options.encodeBase64 != null) return options.encodeBase64 === true ? String(text || '') : String(options.encodeBase64)
+
+          // Finally fall back to text argument or default
+          if (options.decodeBase64 != null) return String(text || '')
+          if (options.encodeBase64 != null) return String(text || '')
           return ''
         }
 

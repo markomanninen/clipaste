@@ -151,7 +151,8 @@ if ($null -eq $clipboard) {
 
   async hasContent () {
     // In headless environments, simulate empty clipboard
-    if (isHeadlessEnvironment()) {
+    // For unit tests with injected dependencies, don't treat as headless
+    if (isHeadlessEnvironment(!_injectedClipboardy)) {
       return false
     }
 
@@ -193,7 +194,7 @@ if ($null -eq $clipboard) {
       return false
     } catch (error) {
       // In case of clipboard access errors, simulate empty clipboard in headless environments
-      if (isHeadlessEnvironment()) {
+      if (isHeadlessEnvironment(!_injectedClipboardy)) {
         return false
       }
       throw new Error(`Failed to read clipboard: ${error.message}`)
@@ -202,7 +203,7 @@ if ($null -eq $clipboard) {
 
   async readText () {
     // In headless environments, return empty string
-    if (isHeadlessEnvironment()) {
+    if (isHeadlessEnvironment(!_injectedClipboardy)) {
       return ''
     }
 
@@ -232,7 +233,7 @@ if ($null -eq $clipboard) {
       return ''
     } catch (error) {
       // In headless environments, return empty string instead of throwing
-      if (isHeadlessEnvironment()) {
+      if (isHeadlessEnvironment(!_injectedClipboardy)) {
         return ''
       }
       throw new Error(`Failed to read text from clipboard: ${error.message}`)
@@ -241,7 +242,7 @@ if ($null -eq $clipboard) {
 
   async writeText (content) {
     // In headless environments, simulate successful write
-    if (isHeadlessEnvironment()) {
+    if (isHeadlessEnvironment(!_injectedClipboardy)) {
       return true
     }
 
@@ -251,7 +252,7 @@ if ($null -eq $clipboard) {
       return true
     } catch (error) {
       // In headless environments, simulate successful write instead of throwing
-      if (isHeadlessEnvironment()) {
+      if (isHeadlessEnvironment(!_injectedClipboardy)) {
         return true
       }
       throw new Error(`Failed to write text to clipboard: ${error.message}`)
@@ -260,7 +261,7 @@ if ($null -eq $clipboard) {
 
   async clear () {
     // In headless environments, simulate successful clear
-    if (isHeadlessEnvironment()) {
+    if (isHeadlessEnvironment(!_injectedClipboardy)) {
       return true
     }
 
@@ -270,7 +271,7 @@ if ($null -eq $clipboard) {
       return true
     } catch (error) {
       // In headless environments, simulate successful clear instead of throwing
-      if (isHeadlessEnvironment()) {
+      if (isHeadlessEnvironment(!_injectedClipboardy)) {
         return true
       }
       throw new Error(`Failed to clear clipboard: ${error.message}`)
@@ -322,7 +323,7 @@ if ($null -eq $clipboard) {
 
   async writeImage (imagePath) {
     // In headless environments, simulate successful write
-    if (isHeadlessEnvironment()) {
+    if (isHeadlessEnvironment(!_injectedClipboardy)) {
       return true
     }
 
