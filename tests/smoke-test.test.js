@@ -10,7 +10,7 @@ describe('Smoke Tests - Basic Functionality', () => {
     return new Promise((resolve) => {
       const child = spawn('node', [cliScript, ...args], {
         stdio: 'pipe',
-        timeout: 5000
+        timeout: 8000 // Increased timeout for macOS clipboard operations
       })
 
       let stdout = ''
@@ -70,7 +70,7 @@ describe('Smoke Tests - Basic Functionality', () => {
 
       // Should exit with 0 or 1, not crash
       expect([0, 1]).toContain(result.code)
-    })
+    }, 10000) // Increased timeout for macOS clipboard operations
 
     it('should handle paste dry-run without function errors', async () => {
       const result = await runCommand(['paste', '--dry-run', '--filename', 'test'])
@@ -94,7 +94,7 @@ describe('Smoke Tests - Basic Functionality', () => {
 
       // Should complete without crashing
       expect([0, 1]).toContain(result.code)
-    })
+    }, 10000) // Increased timeout for macOS clipboard operations
   })
 
   describe('Dependency Loading Verification', () => {

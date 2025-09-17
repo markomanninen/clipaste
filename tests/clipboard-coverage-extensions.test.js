@@ -333,10 +333,12 @@ describe('ClipboardManager Coverage Extensions', () => {
 
     test('detects empty content', async () => {
       mockClipboardy.read.mockResolvedValue('')
+      // Mock macOS fallback to return empty
+      clipboardManager.checkMacClipboard = jest.fn().mockResolvedValue('empty')
 
       const result = await clipboardManager.getContentType()
       expect(result).toBe('empty')
-    })
+    }, 10000)
 
     test('handles getContentType error', async () => {
       mockClipboardy.read.mockRejectedValue(new Error('read error'))

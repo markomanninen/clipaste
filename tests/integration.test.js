@@ -44,7 +44,14 @@ describe('CLI Integration Tests', () => {
         stderr += data.toString()
       })
 
+      // Add timeout for hanging processes
+      const timeout = setTimeout(() => {
+        child.kill('SIGTERM')
+        resolve({ code: 124, stdout, stderr: stderr + '\nProcess timed out after 10 seconds' })
+      }, 10000)
+
       child.on('close', (code) => {
+        clearTimeout(timeout)
         resolve({ code, stdout, stderr })
       })
     })
@@ -95,7 +102,7 @@ describe('CLI Integration Tests', () => {
       if (output.length > 0) {
         expect(output).toMatch(/Clipboard contains:|Clipboard is empty|Error:/)
       }
-    })
+    }, 15000)
   })
 
   describe('paste command with dry-run', () => {
@@ -110,7 +117,7 @@ describe('CLI Integration Tests', () => {
       // Should not create actual files in dry-run mode
       const files = await fs.readdir(testDir)
       expect(files.filter(f => f.includes('test-dry-run'))).toHaveLength(0)
-    })
+    }, 10000)
   })
 
   describe('error handling', () => {
@@ -140,6 +147,6 @@ describe('CLI Integration Tests', () => {
 
       // Dry run should work even with invalid directory
       // (actual paste might fail, but dry-run shows the path)
-    })
+    }, 10000)
   })
 })

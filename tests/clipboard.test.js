@@ -54,6 +54,8 @@ describe('ClipboardManager', () => {
 
       it('should return false when clipboard is empty', async () => {
         mockClipboardy.read.mockResolvedValue('')
+        // Mock macOS fallback to return empty as well
+        clipboardManager.checkMacClipboard = jest.fn().mockResolvedValue('empty')
 
         const result = await clipboardManager.hasContent()
 
@@ -121,6 +123,8 @@ describe('ClipboardManager', () => {
   describe('readImage', () => {
     it('should return null for non-image content', async () => {
       mockClipboardy.read.mockResolvedValue('plain text')
+      // Mock macOS fallback to not detect image
+      clipboardManager.checkMacClipboard = jest.fn().mockResolvedValue('text')
 
       const result = await clipboardManager.readImage()
 
@@ -190,6 +194,8 @@ describe('ClipboardManager', () => {
   describe('getContentType', () => {
     it('should return "empty" for empty clipboard', async () => {
       mockClipboardy.read.mockResolvedValue('')
+      // Mock macOS fallback to return empty
+      clipboardManager.checkMacClipboard = jest.fn().mockResolvedValue('empty')
 
       const result = await clipboardManager.getContentType()
 

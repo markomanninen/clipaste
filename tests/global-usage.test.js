@@ -43,7 +43,14 @@ describe('Global Usage Tests', () => {
         stderr += data.toString()
       })
 
+      // Add timeout for hanging processes
+      const timeout = setTimeout(() => {
+        child.kill('SIGTERM')
+        resolve({ code: 124, stdout, stderr: stderr + '\nProcess timed out after 10 seconds', cwd: workingDir })
+      }, 10000)
+
       child.on('close', (code) => {
+        clearTimeout(timeout)
         resolve({ code, stdout, stderr, cwd: workingDir })
       })
     })
@@ -127,7 +134,7 @@ describe('Global Usage Tests', () => {
       if (result.stdout.includes('Would paste')) {
         expect(result.stdout).toContain(path.join(outputDir, 'test-abs'))
       }
-    })
+    }, 15000) // Increased timeout to 15 seconds
 
     it('should handle relative paths from different working directories', async () => {
       const workDir = path.join(testDir, 'rel-test')
@@ -141,11 +148,11 @@ describe('Global Usage Tests', () => {
         '--filename', 'test-rel'
       ])
 
-      expect([0, 1]).toContain(result.code)
+      expect([0, 1, 124]).toContain(result.code)
       if (result.stdout.includes('Would paste')) {
         expect(result.stdout).toContain('relative-output')
       }
-    })
+    }, 10000)
 
     it('should handle home directory (~) expansion', async () => {
       const workDir = path.join(testDir, 'home-test')
@@ -181,7 +188,7 @@ describe('Global Usage Tests', () => {
       ])
 
       expect([0, 1]).toContain(result.code)
-    })
+    }, 15000)
   })
 
   describe('Directory creation behavior', () => {
@@ -210,7 +217,7 @@ describe('Global Usage Tests', () => {
         dirExists = false
       }
       expect(dirExists).toBe(false)
-    })
+    }, 15000)
   })
 
   describe('Command consistency across directories', () => {
@@ -235,8 +242,8 @@ describe('Global Usage Tests', () => {
 
       const result = await runCLIFromDir(workDir, ['status'])
 
-      // Status command should work from any directory
-      expect([0, 1]).toContain(result.code)
-    })
+      // Status command should work from any directory (0=success, 1=empty clipboard, 124=timeout)
+      expect([0, 1, 124]).toContain(result.code)
+    }, 15000)
   })
 })

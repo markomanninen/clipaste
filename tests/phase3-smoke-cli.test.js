@@ -26,7 +26,18 @@ describe('Phase 3 - smoke CLI (spawned)', () => {
       let stderr = ''
       child.stdout.on('data', (d) => { stdout += d.toString() })
       child.stderr.on('data', (d) => { stderr += d.toString() })
-      child.on('close', (code) => resolve({ code, stdout, stderr }))
+
+      // Add timeout for hanging processes
+      const timeout = setTimeout(() => {
+        child.kill('SIGTERM')
+        resolve({ code: 124, stdout, stderr: stderr + '\nProcess timed out after 10 seconds' })
+      }, 10000)
+
+      child.on('close', (code) => {
+        clearTimeout(timeout)
+        resolve({ code, stdout, stderr })
+      })
+
       if (opts.stdin) {
         child.stdin.write(opts.stdin)
         child.stdin.end()
@@ -58,7 +69,7 @@ describe('Phase 3 - smoke CLI (spawned)', () => {
     const res = await runCLI(['paste', '--dry-run', '--resize', '800x', '--auto-extension', '--filename', 'smoke'])
     // Exit 0 or 1 depending on clipboard availability
     expect([0, 1]).toContain(res.code)
-  })
+  }, 15000)
 
   it('copy --encode-base64 works with stdin in headless mode', async () => {
     const res = await runCLI(['copy', '--encode-base64'], { env: { HEADLESS: '1' }, stdin: 'abc' })

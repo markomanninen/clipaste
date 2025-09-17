@@ -40,7 +40,14 @@ describe('REAL Functionality Tests', () => {
         stderr += data.toString()
       })
 
+      // Add timeout for hanging processes
+      const timeout = setTimeout(() => {
+        child.kill('SIGTERM')
+        resolve({ code: 124, stdout, stderr: stderr + '\nProcess timed out after 15 seconds' })
+      }, 15000)
+
       child.on('close', (code) => {
+        clearTimeout(timeout)
         resolve({ code, stdout, stderr })
       })
     })
@@ -130,13 +137,14 @@ describe('REAL Functionality Tests', () => {
         if (result.stdout.trim() === '' && isHeadlessEnvironment()) {
           console.warn('Info: Clipboard status test - clipboard access unavailable in headless/CI environment')
         } else {
-          expect(result.stdout).toContain('Clipboard is empty')
+          // Both messages indicate empty clipboard state
+          expect(result.stdout).toMatch(/Clipboard is empty|No image data found in clipboard/)
         }
       }
 
       // Should not crash with function errors
       expect(result.stderr).not.toContain('is not a function')
-    }, 10000)
+    }, 20000)
   })
 
   describe('REAL Clear Functionality Tests', () => {

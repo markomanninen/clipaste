@@ -129,8 +129,8 @@ describe('Phase 1 Enhancement Tests - REAL Tests', () => {
   describe('Get Command - REAL Tests', () => {
     beforeEach(async () => {
       // Clear clipboard before each test
-      await runCLI(['clear'])
-    })
+      await runCLI(['clear'], null, 15000)
+    }, 20000)
 
     it('should output clipboard content to stdout', async () => {
       const testContent = 'Content for get command test'
@@ -163,12 +163,12 @@ describe('Phase 1 Enhancement Tests - REAL Tests', () => {
 
     it('should handle empty clipboard gracefully', async () => {
       // Ensure clipboard is empty
-      await runCLI(['clear'])
+      await runCLI(['clear'], null, 15000)
 
-      const result = await runCLI(['get'])
+      const result = await runCLI(['get'], null, 15000)
       expect(result.code).toBe(0)
       expect(result.stdout).toBe('') // Empty output like pbpaste
-    })
+    }, 20000)
 
     it('should work in pipe chains', async () => {
       const testContent = 'Content for pipe test'
@@ -223,17 +223,17 @@ describe('Phase 1 Enhancement Tests - REAL Tests', () => {
       // Verify clipboard is empty (best-effort)
       const afterResult = await runCLI(['get'])
       expect(afterResult.stdout.trim()).toBe('')
-    })
+    }, 20000)
 
     it('should handle already empty clipboard gracefully', async () => {
       // Clear first
-      await runCLI(['clear'])
+      await runCLI(['clear'], null, 15000)
 
       // Try to clear again
-      const result = await runCLI(['clear'])
+      const result = await runCLI(['clear'], null, 15000)
       expect(result.code).toBe(0)
       expect(result.stdout).toContain('Clipboard is already empty')
-    })
+    }, 20000)
 
     it('should backup clipboard content before clearing', async () => {
       // Check if clipboard has content in this environment
@@ -365,17 +365,17 @@ describe('Phase 1 Enhancement Tests - REAL Tests', () => {
 
   describe('Error Handling and Edge Cases', () => {
     it('should handle get command with empty clipboard', async () => {
-      await runCLI(['clear'])
+      await runCLI(['clear'], null, 15000)
 
-      const result = await runCLI(['get'])
+      const result = await runCLI(['get'], null, 15000)
       expect(result.code).toBe(0)
       expect(result.stdout).toBe('')
-    })
+    }, 20000)
 
     it('should handle status command with empty clipboard', async () => {
-      await runCLI(['clear'])
+      await runCLI(['clear'], null, 15000)
 
-      const result = await runCLI(['status'])
+      const result = await runCLI(['status'], null, 15000)
       expect(result.code).toBe(0)
 
       // In headless environments, the output may be empty string
@@ -385,7 +385,7 @@ describe('Phase 1 Enhancement Tests - REAL Tests', () => {
         // Handle both regular and headless mode messages
         expect(result.stdout.trim()).toMatch(/^Clipboard is empty( \(headless mode - simulated\))?$/)
       }
-    })
+    }, 20000)
 
     it('should handle very long text content', async () => {
       const longText = 'A'.repeat(10000)

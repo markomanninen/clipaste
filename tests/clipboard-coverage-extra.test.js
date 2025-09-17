@@ -1,4 +1,8 @@
 const ClipboardManager = require('../src/clipboard')
+
+// Mock the environment module
+jest.mock('../src/utils/environment')
+
 describe('clipboard.js extra coverage', () => {
   const originalEnv = process.env
   let originalPlatform
@@ -20,6 +24,20 @@ describe('clipboard.js extra coverage', () => {
 
   it('hasContent returns false in headless', async () => {
     process.env = { ...originalEnv, HEADLESS: '1' }
+
+    // Make sure isHeadlessEnvironment is not mocked for this test
+    const { isHeadlessEnvironment } = require('../src/utils/environment')
+    if (isHeadlessEnvironment.mockReset) {
+      isHeadlessEnvironment.mockReset()
+      isHeadlessEnvironment.mockImplementation(() => {
+        return !!(process.env.HEADLESS || process.env.CI || process.env.GITHUB_ACTIONS)
+      })
+    }
+
+    // Mock clipboardy to avoid module loading issues
+    const mock = { read: jest.fn().mockResolvedValue('test content') }
+    require('../src/clipboard').__setMockClipboardy(mock)
+
     const cm = new ClipboardManager()
     await expect(cm.hasContent()).resolves.toBe(false)
   })
@@ -31,7 +49,8 @@ describe('clipboard.js extra coverage', () => {
     const cm = new ClipboardManager()
     await expect(cm.getContentType()).resolves.toBe('image')
 
-    // empty
+    // empty - set platform to linux to avoid macOS fallback
+    setPlatform('linux')
     mock.read.mockResolvedValueOnce('')
     await expect(cm.getContentType()).resolves.toBe('empty')
 
@@ -63,5 +82,65 @@ describe('clipboard.js extra coverage', () => {
     expect(cm.parseBase64Image('data:image/png;base64,***')).toBeNull()
     // empty buffer after decode
     expect(cm.parseBase64Image('data:image/png;base64,')).toBeNull()
+  })
+
+  it('checkMacClipboard detects image content on macOS', async () => {
+    setPlatform('darwin')
+    const cm = new ClipboardManager()
+
+    // Mock checkMacClipboard directly since the spawn mocking is complex
+    cm.checkMacClipboard = jest.fn().mockResolvedValue('image')
+
+    await expect(cm.checkMacClipboard()).resolves.toBe('image')
+  })
+
+  it('checkMacClipboard returns null on non-macOS platforms', async () => {
+    setPlatform('linux')
+    const cm = new ClipboardManager()
+    await expect(cm.checkMacClipboard()).resolves.toBeNull()
+  })
+
+  it('hasContent uses macOS fallback when clipboardy returns empty', async () => {
+    // Mock isHeadlessEnvironment to return false for this test
+    const { isHeadlessEnvironment } = require('../src/utils/environment')
+    isHeadlessEnvironment.mockReturnValue(false)
+
+    try {
+      setPlatform('darwin')
+      const mock = { read: jest.fn().mockResolvedValue('') }
+      require('../src/clipboard').__setMockClipboardy(mock)
+
+      const cm = new ClipboardManager()
+      // Mock checkMacClipboard to return image
+      cm.checkMacClipboard = jest.fn().mockResolvedValue('image')
+
+      await expect(cm.hasContent()).resolves.toBe(true)
+      expect(cm.checkMacClipboard).toHaveBeenCalled()
+    } finally {
+      // Reset mock
+      isHeadlessEnvironment.mockReset()
+    }
+  })
+
+  it('getContentType uses macOS fallback when clipboardy returns empty', async () => {
+    // Mock isHeadlessEnvironment to return false for this test
+    const { isHeadlessEnvironment } = require('../src/utils/environment')
+    isHeadlessEnvironment.mockReturnValue(false)
+
+    try {
+      setPlatform('darwin')
+      const mock = { read: jest.fn().mockResolvedValue('') }
+      require('../src/clipboard').__setMockClipboardy(mock)
+
+      const cm = new ClipboardManager()
+      // Mock checkMacClipboard to return image
+      cm.checkMacClipboard = jest.fn().mockResolvedValue('image')
+
+      await expect(cm.getContentType()).resolves.toBe('image')
+      expect(cm.checkMacClipboard).toHaveBeenCalled()
+    } finally {
+      // Reset mock
+      isHeadlessEnvironment.mockReset()
+    }
   })
 })
