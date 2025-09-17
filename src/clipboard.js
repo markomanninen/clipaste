@@ -450,22 +450,46 @@ if ($clipboard.GetDataPresent([System.Windows.Forms.DataFormats]::Bitmap)) {
     if (process.platform !== 'darwin') return null
 
     return new Promise((resolve) => {
-      const tempPath = path.join(os.tmpdir(), `clipaste-temp-${Date.now()}.png`)
+      const tempPath = path.join(os.tmpdir(), `clipaste-temp-${Date.now()}.img`)
+      const escapedPath = tempPath.replace(/"/g, '\\"')
+      const appleScript = `set tempPath to POSIX file "${escapedPath}"
+set fileRef to missing value
+set imageData to missing value
+set formatLabel to ""
+set formatPairs to {{"png", \u00ABclass PNGf\u00BB}, {"jpeg", \u00ABclass JPEG\u00BB}, {"gif", \u00ABclass GIFf\u00BB}, {"tiff", \u00ABclass TIFF\u00BB}, {"bmp", \u00ABclass BMPf\u00BB}}
+
+repeat with pairItem in formatPairs
+  set currentLabel to item 1 of pairItem
+  set currentClass to item 2 of pairItem
+  try
+    set imageData to the clipboard as currentClass
+    set formatLabel to currentLabel
+    exit repeat
+  on error
+    set imageData to missing value
+  end try
+end repeat
+
+if imageData is missing value then
+  return "no-image"
+end if
+
+try
+  set fileRef to open for access tempPath with write permission
+  set eof of fileRef to 0
+  write imageData to fileRef
+  close access fileRef
+  return "success:" & formatLabel
+on error errMsg number errNum
+  try
+    if fileRef is not missing value then close access fileRef
+  end try
+  return "error:" & errMsg
+end try`
 
       const osascript = spawn('osascript', [
         '-e',
-        `try
-          set imageData to the clipboard as picture
-          set fileRef to open for access POSIX file "${tempPath}" with write permission
-          write imageData to fileRef
-          close access fileRef
-          return "success"
-        on error
-          try
-            close access fileRef
-          end try
-          return "error"
-        end try`
+        appleScript
       ], { stdio: ['pipe', 'pipe', 'pipe'] })
 
       let output = ''
@@ -479,32 +503,55 @@ if ($clipboard.GetDataPresent([System.Windows.Forms.DataFormats]::Bitmap)) {
         hasErrored = true
       })
 
-      osascript.on('close', async (code) => {
-        if (hasErrored || code !== 0 || !output.includes('success')) {
-          // Clean up temp image file if it exists
+      osascript.on('close', (code) => {
+        const cleanupTempFile = () => {
           try {
             if (fs.existsSync(tempPath)) {
               fs.unlinkSync(tempPath)
             }
           } catch (e) { /* ignore */ }
-          resolve(null)
-        } else {
-          try {
-            // Read the saved image file
-            if (fs.existsSync(tempPath)) {
-              const buffer = fs.readFileSync(tempPath)
-              fs.unlinkSync(tempPath) // Clean up
-              resolve({
-                format: 'png',
-                data: buffer
-              })
-            } else {
-              resolve(null)
-            }
-          } catch (error) {
-            resolve(null)
-          }
         }
+
+        const trimmedOutput = output.trim()
+
+        if (hasErrored || code !== 0 || !trimmedOutput || trimmedOutput.startsWith('error')) {
+          cleanupTempFile()
+          resolve(null)
+          return
+        }
+
+        if (trimmedOutput === 'no-image') {
+          cleanupTempFile()
+          resolve(null)
+          return
+        }
+
+        if (!trimmedOutput.startsWith('success:')) {
+          cleanupTempFile()
+          resolve(null)
+          return
+        }
+
+        const format = trimmedOutput.split(':')[1] || 'png'
+
+        try {
+          if (fs.existsSync(tempPath)) {
+            const buffer = fs.readFileSync(tempPath)
+            cleanupTempFile()
+            resolve({
+              format,
+              data: buffer
+            })
+            return
+          }
+        } catch (error) {
+          cleanupTempFile()
+          resolve(null)
+          return
+        }
+
+        cleanupTempFile()
+        resolve(null)
       })
 
       // Timeout after 10 seconds

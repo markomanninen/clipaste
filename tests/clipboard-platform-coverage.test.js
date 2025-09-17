@@ -96,7 +96,7 @@ describe('Clipboard Platform-Specific Coverage Tests', () => {
         const dataCallback = mockProcess.stdout.on.mock.calls.find(call => call[0] === 'data')?.[1]
         if (dataCallback) {
           // Simulate the success data event with exactly what the code expects
-          dataCallback(Buffer.from('success\n'))
+          dataCallback(Buffer.from('success:png\n'))
         }
       }
 
@@ -117,6 +117,55 @@ describe('Clipboard Platform-Specific Coverage Tests', () => {
       mockSpawn.mockClear()
       mockExistsSync.mockRestore()
       mockReadFileSync.mockRestore()
+      mockUnlinkSync.mockRestore()
+    })
+
+    it('should return null when macOS script reports no image', async () => {
+      Object.defineProperty(process, 'platform', {
+        value: 'darwin',
+        configurable: true
+      })
+
+      const testClipboardManager = new ClipboardManager()
+
+      const mockProcess = {
+        stdout: { on: jest.fn() },
+        stderr: { on: jest.fn() },
+        on: jest.fn(),
+        kill: jest.fn()
+      }
+
+      mockSpawn.mockReturnValue(mockProcess)
+
+      const mockExistsSync = jest.spyOn(fs, 'existsSync')
+      const mockUnlinkSync = jest.spyOn(fs, 'unlinkSync')
+
+      mockExistsSync.mockReturnValue(false)
+      mockUnlinkSync.mockImplementation(() => {})
+
+      const promise = testClipboardManager.readMacImage()
+
+      await new Promise(resolve => setImmediate(resolve))
+
+      if (mockProcess.stdout.on.mock.calls.length > 0) {
+        const dataCallback = mockProcess.stdout.on.mock.calls.find(call => call[0] === 'data')?.[1]
+        if (dataCallback) {
+          dataCallback(Buffer.from('no-image\n'))
+        }
+      }
+
+      if (mockProcess.on.mock.calls.length > 0) {
+        const closeCallback = mockProcess.on.mock.calls.find(call => call[0] === 'close')?.[1]
+        if (closeCallback) {
+          closeCallback(0)
+        }
+      }
+
+      const result = await promise
+      expect(result).toBeNull()
+
+      mockSpawn.mockClear()
+      mockExistsSync.mockRestore()
       mockUnlinkSync.mockRestore()
     })
 
