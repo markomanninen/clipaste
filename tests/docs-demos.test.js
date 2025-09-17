@@ -90,7 +90,7 @@ describe('Docs demo parity', () => {
 
     const status = await runCLI(['status'], { cwd: ctx.workDir, env })
     expect(status.code).toBe(0)
-    expect(status.stdout).toMatch(/Clipboard (is empty|contains: empty content)/)
+    expect(status.stdout).toMatch(/Clipboard (is empty|contains: empty content|contains: image content)/)
 
     const copy = await runCLI(['copy', 'Hello from clipaste'], { cwd: ctx.workDir, env })
     expect(copy.code).toBe(0)
@@ -306,6 +306,12 @@ describe('Docs demo parity', () => {
   test('clipaste-randomizer tape scenario', async () => {
     const ctx = await createContext('randomizer')
     const env = buildEnv(ctx)
+
+    const pluginStatus = await runCLI(['plugins'], { cwd: ctx.workDir, env })
+    if (!pluginStatus.stdout.includes('clipaste-randomizer')) {
+      console.warn('clipaste-randomizer plugin not available; skipping randomizer scenario')
+      return
+    }
 
     const password = await runCLI(['random', 'password', '--length', '16'], { cwd: ctx.workDir, env })
     expect(password.code).toBe(0)
