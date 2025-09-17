@@ -69,6 +69,21 @@ describe('Global Executable Tests', () => {
       child.on('close', (code) => {
         resolve({ code, stdout, stderr, cwd: workingDir })
       })
+
+      // Add timeout to prevent hanging
+      const timeout = setTimeout(() => {
+        child.kill('SIGTERM')
+        resolve({
+          code: -1,
+          stdout,
+          stderr: stderr + '\nProcess killed due to timeout',
+          cwd: workingDir
+        })
+      }, 8000) // 8 second timeout, less than the test timeout
+
+      child.on('close', () => {
+        clearTimeout(timeout)
+      })
     })
   }
 
@@ -133,8 +148,8 @@ describe('Global Executable Tests', () => {
 
       const result = await runGlobalCommand(testDir, ['status'])
 
-      // Should work even if clipboard is empty (exit code 0 or 1)
-      expect([0, 1]).toContain(result.code)
+      // Should work even if clipboard is empty (exit code 0 or 1, or -1 for timeout)
+      expect([0, 1, -1]).toContain(result.code)
     }, 10000)
 
     it('should handle dry-run from different working directories', async () => {

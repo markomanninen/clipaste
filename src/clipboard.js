@@ -38,12 +38,22 @@ class ClipboardManager {
 $clipboard = [System.Windows.Forms.Clipboard]::GetDataObject()
 if ($null -eq $clipboard) {
     Write-Output "empty"
-} elseif ($clipboard.GetDataPresent([System.Windows.Forms.DataFormats]::Bitmap)) {
-    Write-Output "image"
-} elseif ($clipboard.GetDataPresent([System.Windows.Forms.DataFormats]::Text)) {
-    Write-Output "text"
 } else {
-    Write-Output "unknown"
+    $formats = $clipboard.GetFormats()
+    if ($formats.Count -eq 0) {
+        Write-Output "empty"
+    } elseif ($clipboard.GetDataPresent([System.Windows.Forms.DataFormats]::Bitmap)) {
+        Write-Output "image"
+    } elseif ($clipboard.GetDataPresent([System.Windows.Forms.DataFormats]::Text)) {
+        $text = $clipboard.GetData([System.Windows.Forms.DataFormats]::Text)
+        if ([string]::IsNullOrWhiteSpace($text)) {
+            Write-Output "empty"
+        } else {
+            Write-Output "text"
+        }
+    } else {
+        Write-Output "unknown"
+    }
 }`
 
       try {
@@ -165,9 +175,15 @@ if ($null -eq $clipboard) {
           if (content != null && content.trim().length > 0) return true
         } catch (error) {
           // On Windows, if clipboardy fails but we detected content via PowerShell, return true
-          if (this.isWindows && (error.message.includes('Element not found') || error.message.includes('Elementtiä ei löydy'))) {
+          if (this.isWindows && (
+            error.message.includes('Element not found') ||
+            error.message.includes('Elementtiä ei löydy') ||
+            error.message.includes('Could not paste from clipboard') ||
+            error.message.includes('thread \'main\' panicked')
+          )) {
             const winType = await this.checkWindowsClipboard()
             if (winType === 'image' || winType === 'text') return true
+            if (winType === 'empty' || winType === null) return false
           }
           // Re-throw other errors on final attempt
           if (attempt === 2) throw error
@@ -214,13 +230,18 @@ if ($null -eq $clipboard) {
           const content = await clipboardy.read()
           if (content != null && content.length > 0) return content
         } catch (error) {
-          // On Windows, if clipboardy fails with the specific error, check if it's actually an image
-          if (this.isWindows && (error.message.includes('Element not found') || error.message.includes('Elementtiä ei löydy'))) {
+          // On Windows, if clipboardy fails with the specific error, check if it's actually an image or completely empty
+          if (this.isWindows && (
+            error.message.includes('Element not found') ||
+            error.message.includes('Elementtiä ei löydy') ||
+            error.message.includes('Could not paste from clipboard') ||
+            error.message.includes('thread \'main\' panicked')
+          )) {
             const winType = await this.checkWindowsClipboard()
             if (winType === 'image') {
               throw new Error('Clipboard contains image data, not text. Use readImage() instead.')
             }
-            if (winType === 'empty') {
+            if (winType === 'empty' || winType === null) {
               return ''
             }
           }
@@ -321,6 +342,84 @@ if ($null -eq $clipboard) {
     })
   }
 
+  // Windows-specific method to write image to clipboard using PowerShell
+  async writeWindowsImage (imagePath) {
+    if (!this.isWindows) return null
+
+    return new Promise((resolve) => {
+      const tempScript = path.join(os.tmpdir(), `clipaste-write-image-${Date.now()}.ps1`)
+
+      // Escape the path for PowerShell
+      const escapedPath = imagePath.replace(/\\/g, '\\\\')
+
+      const scriptContent = `Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
+
+try {
+    $image = [System.Drawing.Image]::FromFile('${escapedPath}')
+    [System.Windows.Forms.Clipboard]::SetImage($image)
+    $image.Dispose()
+    Write-Output "success"
+} catch {
+    Write-Output "error: $($_.Exception.Message)"
+}`
+
+      try {
+        fs.writeFileSync(tempScript, scriptContent)
+      } catch (error) {
+        resolve(false)
+        return
+      }
+
+      const ps = spawn('powershell.exe', [
+        '-NoProfile',
+        '-NonInteractive',
+        '-ExecutionPolicy',
+        'Bypass',
+        '-File',
+        tempScript
+      ], { stdio: ['pipe', 'pipe', 'pipe'] })
+
+      let output = ''
+      let hasErrored = false
+
+      ps.stdout.on('data', (data) => {
+        output += data.toString()
+      })
+
+      ps.stderr.on('data', () => {
+        hasErrored = true
+      })
+
+      ps.on('close', (code) => {
+        // Clean up temp script file
+        try {
+          if (fs.existsSync(tempScript)) {
+            fs.unlinkSync(tempScript)
+          }
+        } catch {}
+
+        if (hasErrored || code !== 0 || !output.includes('success')) {
+          resolve(false)
+        } else {
+          resolve(true)
+        }
+      })
+
+      // Timeout after 10 seconds
+      setTimeout(() => {
+        ps.kill()
+        // Clean up temp script file
+        try {
+          if (fs.existsSync(tempScript)) {
+            fs.unlinkSync(tempScript)
+          }
+        } catch {}
+        resolve(false)
+      }, 10000)
+    })
+  }
+
   async writeImage (imagePath) {
     // In headless environments, simulate successful write
     if (isHeadlessEnvironment(!_injectedClipboardy)) {
@@ -337,8 +436,7 @@ if ($null -eq $clipboard) {
       if (process.platform === 'darwin') {
         return await this.writeMacImage(imagePath)
       } else if (this.isWindows) {
-        // TODO: Implement Windows image writing
-        throw new Error('Windows image-to-clipboard functionality not yet implemented')
+        return await this.writeWindowsImage(imagePath)
       } else {
         // TODO: Implement Linux image writing
         throw new Error('Linux image-to-clipboard functionality not yet implemented')
@@ -658,8 +756,13 @@ end try`
       try {
         content = await clipboardy.read()
       } catch (error) {
-        // On Windows, if clipboardy fails but we detected image content, return image
-        if (this.isWindows && (error.message.includes('Element not found') || error.message.includes('Elementtiä ei löydy'))) {
+        // On Windows, if clipboardy fails with various clipboard errors, check via PowerShell
+        if (this.isWindows && (
+          error.message.includes('Element not found') ||
+          error.message.includes('Elementtiä ei löydy') ||
+          error.message.includes('Could not paste from clipboard') ||
+          error.message.includes('thread \'main\' panicked')
+        )) {
           const winType = await this.checkWindowsClipboard()
           if (winType === 'image') return 'image'
           if (winType === 'text') return 'text'

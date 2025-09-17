@@ -86,6 +86,37 @@ describe('ClipboardManager', () => {
         await expect(clipboardManager.readText()).rejects.toThrow('Failed to read text from clipboard: Read failed')
       })
     })
+
+    describe('readImage', () => {
+      it('should return null for non-image content', async () => {
+        mockClipboardy.read.mockResolvedValue('plain text')
+        // Mock platform-specific fallbacks to not detect image
+        clipboardManager.checkMacClipboard = jest.fn().mockResolvedValue('text')
+        clipboardManager.checkWindowsClipboard = jest.fn().mockResolvedValue('text')
+
+        const result = await clipboardManager.readImage()
+
+        expect(result).toBeNull()
+      })
+
+      it('should parse base64 image data', async () => {
+        const base64Data = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
+        const dataUrl = `data:image/png;base64,${base64Data}`
+        mockClipboardy.read.mockResolvedValue(dataUrl)
+
+        const result = await clipboardManager.readImage()
+
+        expect(result).not.toBeNull()
+        expect(result.format).toBe('png')
+        expect(Buffer.isBuffer(result.data)).toBe(true)
+      })
+
+      it('should throw error when reading image fails', async () => {
+        mockClipboardy.read.mockRejectedValue(new Error('Read failed'))
+
+        await expect(clipboardManager.readImage()).rejects.toThrow('Failed to read image from clipboard: Read failed')
+      })
+    })
   })
 
   describe('in headless environment', () => {
@@ -117,36 +148,6 @@ describe('ClipboardManager', () => {
         // Should not call clipboardy in headless mode
         expect(mockClipboardy.read).not.toHaveBeenCalled()
       })
-    })
-  })
-
-  describe('readImage', () => {
-    it('should return null for non-image content', async () => {
-      mockClipboardy.read.mockResolvedValue('plain text')
-      // Mock macOS fallback to not detect image
-      clipboardManager.checkMacClipboard = jest.fn().mockResolvedValue('text')
-
-      const result = await clipboardManager.readImage()
-
-      expect(result).toBeNull()
-    })
-
-    it('should parse base64 image data', async () => {
-      const base64Data = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
-      const dataUrl = `data:image/png;base64,${base64Data}`
-      mockClipboardy.read.mockResolvedValue(dataUrl)
-
-      const result = await clipboardManager.readImage()
-
-      expect(result).not.toBeNull()
-      expect(result.format).toBe('png')
-      expect(Buffer.isBuffer(result.data)).toBe(true)
-    })
-
-    it('should throw error when reading image fails', async () => {
-      mockClipboardy.read.mockRejectedValue(new Error('Read failed'))
-
-      await expect(clipboardManager.readImage()).rejects.toThrow('Failed to read image from clipboard: Read failed')
     })
   })
 

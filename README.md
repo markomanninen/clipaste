@@ -32,8 +32,9 @@ A cross-platform command-line tool for clipboard operations - paste, copy, and m
 **🖼️ Bidirectional Image Support:**
 
 ```bash
-# Copy image files TO clipboard (macOS)
+# Copy image files TO clipboard (macOS, Windows)
 clipaste copy --image logo.svg          # SVG auto-converts to PNG in clipboard
+clipaste copy --image screenshot.png    # Works on Windows with PowerShell/.NET
 
 # Extract images FROM clipboard
 clipaste paste --filename "screenshot" --format png
@@ -156,7 +157,7 @@ clipaste copy "Some text content"
 # Copy file contents
 clipaste copy --file README.md
 
-# Copy image files to clipboard (macOS)
+# Copy image files to clipboard (macOS, Windows)
 clipaste copy --image logo.png
 clipaste copy --image diagram.svg      # SVG automatically converted to PNG
 clipaste copy --image screenshot.jpg
@@ -221,7 +222,7 @@ clipaste copy --file config.json
 clipaste paste --output ./backup/
 
 # Image handling
-# Copy image files TO clipboard (macOS)
+# Copy image files TO clipboard (macOS, Windows)
 clipaste copy --image logo.png         # Copy PNG image to clipboard
 clipaste copy --image logo.svg         # Copy SVG, auto-converts to PNG
 

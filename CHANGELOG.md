@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Windows Image Support**: Complete implementation of image-to-clipboard functionality
+  - `clipaste copy --image file.png` now works on Windows using PowerShell/.NET Framework
+  - Robust error handling for empty clipboard states and Windows-specific clipboard errors
+  - Support for multiple image formats (PNG, JPEG, GIF, BMP, SVG)
+  - Round-trip testing: file → clipboard → file verification
+
+### Fixed
+
+- **Test Suite Improvements**: Fixed failing tests in clipboard and global-executable test suites
+  - Fixed `readImage` test by properly mocking Windows-specific clipboard methods
+  - Added timeout protection to global command tests to prevent hanging
+  - Enhanced error handling for completely empty clipboard states
+
 ## [1.0.0] - 2025-01-14
 
 ### Added

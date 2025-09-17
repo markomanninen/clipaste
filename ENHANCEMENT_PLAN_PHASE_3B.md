@@ -7,18 +7,20 @@ Pragmatic, cross-platform plan to add image write support to the system clipboar
 ## Implementation Status
 
 ✅ **macOS Support**: Fully implemented using AppleScript with automatic format conversion (SVG→PNG)  
-⚠️ **Windows Support**: Planned (see [TODO-WINDOWS-LINUX-IMAGE.md])  
+✅ **Windows Support**: Fully implemented using PowerShell/.NET Framework with robust error handling  
 ⚠️ **Linux Support**: Planned (see [TODO-WINDOWS-LINUX-IMAGE.md])
 
 ## Completed Features
 
 - ✅ `clipaste copy --image <path>` command implementation
-- ✅ Automatic SVG to PNG conversion via macOS clipboard system  
-- ✅ PNG, JPEG, SVG format support
-- ✅ Error handling for missing files and platform compatibility
-- ✅ Round-trip testing (file → clipboard → file)
+- ✅ **macOS**: Automatic SVG to PNG conversion via AppleScript clipboard system  
+- ✅ **Windows**: PowerShell/.NET Framework integration with System.Drawing/System.Windows.Forms
+- ✅ PNG, JPEG, SVG, GIF, BMP format support across platforms
+- ✅ Enhanced error handling for missing files, platform compatibility, and empty clipboard states
+- ✅ Round-trip testing (file → clipboard → file) on both macOS and Windows
 - ✅ CLI integration with existing copy command structure
-- ✅ Comprehensive test suite for macOS functionality
+- ✅ Comprehensive test suite for macOS and Windows functionality
+- ✅ Robust clipboard state detection and error recovery for Windows
 
 ## Goals
 

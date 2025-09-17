@@ -83,7 +83,7 @@ describe('Image Functionality', () => {
         .rejects.toThrow('Image file not found')
     })
 
-    it('should throw error on Windows (not implemented)', async () => {
+    it('should successfully write image to clipboard on Windows', async () => {
       if (process.platform === 'darwin') {
         return // Skip test on macOS
       }
@@ -94,8 +94,8 @@ describe('Image Functionality', () => {
       clipboardManager.isWindows = true
 
       try {
-        await expect(clipboardManager.writeImage(testImagePath))
-          .rejects.toThrow('Windows image-to-clipboard functionality not yet implemented')
+        const result = await clipboardManager.writeImage(testImagePath)
+        expect(result).toBe(true)
       } finally {
         Object.defineProperty(process, 'platform', { value: originalPlatform })
         clipboardManager.isWindows = originalPlatform === 'win32'
