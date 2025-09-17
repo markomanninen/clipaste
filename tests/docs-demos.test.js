@@ -84,6 +84,24 @@ describe('Docs demo parity', () => {
     })
   }
 
+  const fileExists = async (target) => {
+    try {
+      await fsp.access(target)
+      return true
+    } catch (error) {
+      return false
+    }
+  }
+
+  const waitFor = async (predicate, { timeout = 2000, interval = 50 } = {}) => {
+    const start = Date.now()
+    while (Date.now() - start < timeout) {
+      if (await predicate()) return true
+      await new Promise((resolve) => setTimeout(resolve, interval))
+    }
+    throw new Error('Condition not met within timeout')
+  }
+
   test('clipaste-basics tape scenario', async () => {
     const ctx = await createContext('basics')
     const env = buildEnv(ctx)
@@ -125,7 +143,7 @@ describe('Docs demo parity', () => {
     const clipboardContent = await fsp.readFile(ctx.clipboardFile, 'utf8')
     expect(clipboardContent.trim()).toBe('watch demo')
 
-    const execCommand = `node ${JSON.stringify(WATCH_EXEC_SCRIPT)}`
+    const execCommand = `${JSON.stringify(process.execPath)} ${JSON.stringify(WATCH_EXEC_SCRIPT)}`
     const hash = crypto.createHash('sha256').update('watch demo').digest('hex')
 
     const prevCwd = process.cwd()
@@ -138,6 +156,7 @@ describe('Docs demo parity', () => {
 
     await history.addEntry('watch demo')
 
+    await waitFor(async () => await fileExists(outFile), { timeout: 3000 })
     const output = await fsp.readFile(outFile, 'utf8')
     expect(output.trim()).toBe(String(Buffer.from('watch demo', 'utf8').length))
 
@@ -214,6 +233,9 @@ describe('Docs demo parity', () => {
     const sharp = require('sharp')
     const metadata = await sharp(imagePath).metadata()
     expect(metadata.format).toBe('webp')
+
+    // Clean up to avoid Windows file locking issues in CI
+    await fsp.unlink(imagePath).catch(() => {})
   })
 
   test('clipaste-phase4a-snippets tape scenario', async () => {
