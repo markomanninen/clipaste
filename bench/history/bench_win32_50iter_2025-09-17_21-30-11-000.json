@@ -1,0 +1,51 @@
+{
+  "iterations": 50,
+  "platform": "win32",
+  "timings": {
+    "hasContent": {
+      "total": 1226.128,
+      "avg": 24.523,
+      "min": 21.871,
+      "max": 32.827,
+      "opsPerSec": 40.78
+    },
+    "readText": {
+      "total": 1251.977,
+      "avg": 25.04,
+      "min": 22.66,
+      "max": 52.806,
+      "opsPerSec": 39.94
+    },
+    "writeText": {
+      "total": 1226.818,
+      "avg": 24.536,
+      "min": 21.833,
+      "max": 37.716,
+      "opsPerSec": 40.76
+    },
+    "getContentType": {
+      "total": 1255.908,
+      "avg": 25.118,
+      "min": 22.138,
+      "max": 54.823,
+      "opsPerSec": 39.81
+    }
+  },
+  "phases": {
+    "clipboardy.load": {
+      "count": 201,
+      "totalMs": 80.725,
+      "avgMs": 0.402
+    },
+    "clipboardy.write": {
+      "count": 51,
+      "totalMs": 1262.582,
+      "avgMs": 24.757
+    },
+    "clipboardy.read": {
+      "count": 150,
+      "totalMs": 3727.49,
+      "avgMs": 24.85
+    }
+  }
+}

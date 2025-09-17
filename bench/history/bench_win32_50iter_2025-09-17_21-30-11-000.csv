@@ -1,0 +1,11 @@
+metric,avg_ms,min_ms,max_ms,ops_per_sec,total_ms,count
+hasContent,24.523,21.871,32.827,40.78,1226.128,50
+readText,25.04,22.66,52.806,39.94,1251.977,50
+writeText,24.536,21.833,37.716,40.76,1226.818,50
+getContentType,25.118,22.138,54.823,39.81,1255.908,50
+
+# Phase breakdown
+phase,avg_ms,total_ms,count
+clipboardy.load,0.402,80.725,201
+clipboardy.write,24.757,1262.582,51
+clipboardy.read,24.85,3727.49,150

@@ -27,7 +27,9 @@
     "release:patch": "npm version patch",
     "release:minor": "npm version minor",
     "release:major": "npm version major",
-    "prepare": "husky install || true"
+    "prepare": "husky install || true",
+    "benchmark": "node bench/clipboard-bench.js --iterations 100",
+    "benchmark:phases": "node bench/clipboard-bench.js --iterations 50 --phases --jsonFile bench/last-phases.json --csvFile bench/last-phases.csv"
   },
   "keywords": [
     "clipboard",
