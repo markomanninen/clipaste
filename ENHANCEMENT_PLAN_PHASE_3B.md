@@ -1,6 +1,24 @@
-# clipaste Phase 3B Plan: Image-to-Clipboard (copy --image)
+# clipaste Phase 3B Plan: Image-to-Clipboard (copy --image) ✅ COMPLETED
+
+**Status: COMPLETED** - Image-to-clipboard functionality has been successfully implemented for macOS with automatic format conversion.
 
 Pragmatic, cross-platform plan to add image write support to the system clipboard while maintaining text-first reliability and graceful degradation.
+
+## Implementation Status
+
+✅ **macOS Support**: Fully implemented using AppleScript with automatic format conversion (SVG→PNG)  
+⚠️ **Windows Support**: Planned (see [TODO-WINDOWS-LINUX-IMAGE.md])  
+⚠️ **Linux Support**: Planned (see [TODO-WINDOWS-LINUX-IMAGE.md])
+
+## Completed Features
+
+- ✅ `clipaste copy --image <path>` command implementation
+- ✅ Automatic SVG to PNG conversion via macOS clipboard system  
+- ✅ PNG, JPEG, SVG format support
+- ✅ Error handling for missing files and platform compatibility
+- ✅ Round-trip testing (file → clipboard → file)
+- ✅ CLI integration with existing copy command structure
+- ✅ Comprehensive test suite for macOS functionality
 
 ## Goals
 

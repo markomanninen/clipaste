@@ -140,6 +140,7 @@ class CLI {
       .description('Copy content to clipboard')
       .argument('[text]', 'Text to copy to clipboard')
       .option('--file <path>', 'Copy file contents to clipboard')
+      .option('--image <path>', 'Copy image file to clipboard')
       .option('--decode-base64 <data>', 'Decode base64 to text and copy (stdin if present)')
       .option('--encode-base64 [data]', 'Encode input to base64 and copy (stdin if present)')
       .action(async (text, options) => {
@@ -575,7 +576,22 @@ class CLI {
         return
       }
 
-      if (options.file) {
+      if (options.image) {
+        // Copy image file to clipboard
+        const path = require('path')
+
+        try {
+          await this.clipboardManager.writeImage(options.image)
+          if (isHeadless) {
+            console.log(`Copied image ${path.basename(options.image)} to clipboard (headless mode - simulated)`)
+          } else {
+            console.log(`Copied image ${path.basename(options.image)} to clipboard`)
+          }
+        } catch (error) {
+          console.error(`Error copying image file ${options.image}:`, error.message)
+          process.exit(1)
+        }
+      } else if (options.file) {
         // Copy file contents
         const fs = require('fs').promises
         const path = require('path')
@@ -645,6 +661,12 @@ class CLI {
         process.exit(0)
       }
 
+      // Check if clipboard only contains whitespace
+      const text = await this.clipboardManager.readText()
+      if (!text || text.trim().length === 0) {
+        process.exit(0)
+      }
+
       if (options.imageInfo) {
         const img = await this.clipboardManager.readImage()
         if (img && img.data) {
@@ -659,7 +681,6 @@ class CLI {
         // fallthrough to text if no image
       }
 
-      const text = await this.clipboardManager.readText()
       let output = text
 
       if (options.jsonFormat) {

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <title>Clipaste Logomark</title>
+  <desc>Overlapping documents (copy) with a downward arrow into a tray (paste). Monoline, scalable, neutral. Uses currentColor.</desc>
+  <g fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Back document -->
+    <rect x="56" y="36" width="120" height="140" rx="16" />
+    <!-- Front document -->
+    <rect x="88" y="68" width="120" height="140" rx="16" />
+    <!-- Down arrow -->
+    <path d="M148 156 V198" />
+    <path d="M128 178 L148 198 L168 178" />
+    <!-- Tray -->
+    <rect x="72" y="204" width="152" height="16" rx="8" />
+  </g>
+</svg>

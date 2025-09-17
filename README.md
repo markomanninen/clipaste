@@ -6,6 +6,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/node/v/clipaste.svg)](https://nodejs.org/)
 
+![clipaste](logos/clipaste-logo-wordmark.png)
+
 A cross-platform command-line tool for clipboard operations - paste, copy, and manage text and images with file persistence.
 
 ![clipaste basics](docs/demos/clipaste-basics.gif)
@@ -19,17 +21,21 @@ A cross-platform command-line tool for clipboard operations - paste, copy, and m
 | **Cross-platform** | ❌ macOS only | ✅ macOS, Windows, Linux |
 | **File persistence** | ❌ Memory only | ✅ Save to organized files |
 | **Image support** | ❌ Text only | ✅ Extract images from clipboard |
+| **Image copying** | ❌ No file-to-clipboard | ✅ Copy image files to clipboard |
+| **Format conversion** | ❌ No processing | ✅ SVG→PNG, multiple formats |
 | **Content detection** | ❌ No type detection | ✅ Auto-detect text/image/binary |
 | **Organization** | ❌ No file management | ✅ Custom paths, filenames, timestamps |
 | **Backup/Archive** | ❌ Lost when overwritten | ✅ Permanent file storage |
-| **Format conversion** | ❌ No processing | ✅ PNG, JPEG, WebP conversion |
 
 ### Real-World Advantages
 
-**🖼️ Direct Image Extraction:**
+**🖼️ Bidirectional Image Support:**
 
 ```bash
-# Impossible with pbcopy - copy image in GUI, then:
+# Copy image files TO clipboard (macOS)
+clipaste copy --image logo.svg          # SVG auto-converts to PNG in clipboard
+
+# Extract images FROM clipboard
 clipaste paste --filename "screenshot" --format png
 # Creates actual PNG file from clipboard image data
 ```
@@ -58,7 +64,9 @@ clipaste paste   # Automatically saves as .png with proper format
 ## Features
 
 - **Cross-platform clipboard access** - Works on macOS, Windows, and Linux
+- **Bidirectional image support** - Copy image files TO clipboard and extract FROM clipboard
 - **Intelligent content detection** - Automatically identifies text, images, or binary data
+- **Automatic format conversion** - SVG to PNG, with support for various image formats
 - **Image extraction and conversion** - Extract clipboard images as PNG, JPEG, WebP files
 - **Organized file management** - Custom paths, filenames, and automatic timestamps
 - **Base64 image support** - Decode data URLs to actual image files
@@ -148,6 +156,11 @@ clipaste copy "Some text content"
 # Copy file contents
 clipaste copy --file README.md
 
+# Copy image files to clipboard (macOS)
+clipaste copy --image logo.png
+clipaste copy --image diagram.svg      # SVG automatically converted to PNG
+clipaste copy --image screenshot.jpg
+
 # Copy from pipe
 echo "Piped content" | clipaste copy
 ```
@@ -208,11 +221,19 @@ clipaste copy --file config.json
 clipaste paste --output ./backup/
 
 # Image handling
-# (Copy image in GUI first, then:)
+# Copy image files TO clipboard (macOS)
+clipaste copy --image logo.png         # Copy PNG image to clipboard
+clipaste copy --image logo.svg         # Copy SVG, auto-converts to PNG
+
+# Extract images FROM clipboard
 clipaste paste --format png --filename "screenshot"
 clipaste paste --resize 1280x      # width only, keeps aspect
 clipaste paste --resize x720       # height only, keeps aspect
 clipaste paste --resize 800x600    # fit inside 800x600
+
+# Round-trip: File → Clipboard → File
+clipaste copy --image original.svg     # Copy SVG to clipboard
+clipaste paste --filename converted    # Save as PNG from clipboard
 
 # Integration with other tools
 clipaste get | jq .  # Format JSON from clipboard

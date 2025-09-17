@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 256 256">
+  <title>Clipaste Favicon</title>
+  <desc>Simplified mark for small sizes.</desc>
+  <g fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Overlapping docs, simplified geometry for tiny sizes -->
+    <rect x="64" y="48" width="104" height="120" rx="18"/>
+    <rect x="96" y="80" width="104" height="120" rx="18"/>
+    <path d="M148 144 V184" />
+    <path d="M124 164 L148 188 L172 164" />
+  </g>
+</svg>

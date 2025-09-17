@@ -101,6 +101,54 @@ if ($null -eq $clipboard) {
     })
   }
 
+  // macOS-specific method to check clipboard content using AppleScript
+  async checkMacClipboard () {
+    if (process.platform !== 'darwin') return null
+
+    return new Promise((resolve) => {
+      const osascript = spawn('osascript', ['-e', 'clipboard info'], {
+        stdio: ['pipe', 'pipe', 'pipe']
+      })
+
+      let output = ''
+      let hasErrored = false
+
+      osascript.stdout.on('data', (data) => {
+        output += data.toString()
+      })
+
+      osascript.stderr.on('data', () => {
+        hasErrored = true
+      })
+
+      osascript.on('close', (code) => {
+        if (hasErrored || code !== 0) {
+          resolve(null)
+        } else {
+          const clipboardInfo = output.trim()
+          if (!clipboardInfo) {
+            resolve('empty')
+          } else if (clipboardInfo.includes('picture') ||
+                    clipboardInfo.includes('PNGf') ||
+                    clipboardInfo.includes('JPEG') ||
+                    clipboardInfo.includes('TIFF') ||
+                    clipboardInfo.includes('GIF') ||
+                    clipboardInfo.includes('BMP')) {
+            resolve('image')
+          } else {
+            resolve('text')
+          }
+        }
+      })
+
+      // Timeout after 5 seconds
+      setTimeout(() => {
+        osascript.kill()
+        resolve(null)
+      }, 5000)
+    })
+  }
+
   async hasContent () {
     // In headless environments, simulate empty clipboard
     if (isHeadlessEnvironment()) {
@@ -113,7 +161,7 @@ if ($null -eq $clipboard) {
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
           const content = await clipboardy.read()
-          if (content != null && content.length > 0) return true
+          if (content != null && content.trim().length > 0) return true
         } catch (error) {
           // On Windows, if clipboardy fails but we detected content via PowerShell, return true
           if (this.isWindows && (error.message.includes('Element not found') || error.message.includes('Elementtiä ei löydy'))) {
@@ -126,6 +174,22 @@ if ($null -eq $clipboard) {
         // Small delay before retry unless last attempt
         if (attempt < 2) await new Promise(resolve => setTimeout(resolve, 15))
       }
+
+      // On macOS, if clipboardy returned empty, check if there's image content
+      if (process.platform === 'darwin') {
+        const macType = await this.checkMacClipboard()
+        if (macType === 'image') return true
+        if (macType === 'text') {
+          // Double-check if the text content is actually meaningful
+          try {
+            const content = await clipboardy.read()
+            return content != null && content.trim().length > 0
+          } catch {
+            return false
+          }
+        }
+      }
+
       return false
     } catch (error) {
       // In case of clipboard access errors, simulate empty clipboard in headless environments
@@ -210,6 +274,76 @@ if ($null -eq $clipboard) {
         return true
       }
       throw new Error(`Failed to clear clipboard: ${error.message}`)
+    }
+  }
+
+  // macOS-specific method to write image to clipboard using AppleScript
+  async writeMacImage (imagePath) {
+    if (process.platform !== 'darwin') return null
+
+    return new Promise((resolve) => {
+      const osascript = spawn('osascript', [
+        '-e',
+        `try
+          set imageFile to POSIX file "${imagePath}"
+          set the clipboard to (read imageFile as picture)
+          return "success"
+        on error
+          return "error"
+        end try`
+      ], { stdio: ['pipe', 'pipe', 'pipe'] })
+
+      let output = ''
+      let hasErrored = false
+
+      osascript.stdout.on('data', (data) => {
+        output += data.toString()
+      })
+
+      osascript.stderr.on('data', () => {
+        hasErrored = true
+      })
+
+      osascript.on('close', (code) => {
+        if (hasErrored || code !== 0 || !output.includes('success')) {
+          resolve(false)
+        } else {
+          resolve(true)
+        }
+      })
+
+      // Timeout after 5 seconds
+      setTimeout(() => {
+        osascript.kill()
+        resolve(false)
+      }, 5000)
+    })
+  }
+
+  async writeImage (imagePath) {
+    // In headless environments, simulate successful write
+    if (isHeadlessEnvironment()) {
+      return true
+    }
+
+    try {
+      // Verify the file exists
+      if (!fs.existsSync(imagePath)) {
+        throw new Error(`Image file not found: ${imagePath}`)
+      }
+
+      // Platform-specific implementation
+      if (process.platform === 'darwin') {
+        return await this.writeMacImage(imagePath)
+      } else if (this.isWindows) {
+        // TODO: Implement Windows image writing
+        throw new Error('Windows image-to-clipboard functionality not yet implemented')
+      } else {
+        // TODO: Implement Linux image writing
+        throw new Error('Linux image-to-clipboard functionality not yet implemented')
+      }
+    } catch (error) {
+      throw new Error(`Failed to write image to clipboard: ${error.message}`)
     }
   }
 
@@ -310,6 +444,81 @@ if ($clipboard.GetDataPresent([System.Windows.Forms.DataFormats]::Bitmap)) {
     })
   }
 
+  // macOS-specific method to read image from clipboard using AppleScript
+  async readMacImage () {
+    if (process.platform !== 'darwin') return null
+
+    return new Promise((resolve) => {
+      const tempPath = path.join(os.tmpdir(), `clipaste-temp-${Date.now()}.png`)
+
+      const osascript = spawn('osascript', [
+        '-e',
+        `try
+          set imageData to the clipboard as picture
+          set fileRef to open for access POSIX file "${tempPath}" with write permission
+          write imageData to fileRef
+          close access fileRef
+          return "success"
+        on error
+          try
+            close access fileRef
+          end try
+          return "error"
+        end try`
+      ], { stdio: ['pipe', 'pipe', 'pipe'] })
+
+      let output = ''
+      let hasErrored = false
+
+      osascript.stdout.on('data', (data) => {
+        output += data.toString()
+      })
+
+      osascript.stderr.on('data', () => {
+        hasErrored = true
+      })
+
+      osascript.on('close', async (code) => {
+        if (hasErrored || code !== 0 || !output.includes('success')) {
+          // Clean up temp image file if it exists
+          try {
+            if (fs.existsSync(tempPath)) {
+              fs.unlinkSync(tempPath)
+            }
+          } catch (e) { /* ignore */ }
+          resolve(null)
+        } else {
+          try {
+            // Read the saved image file
+            if (fs.existsSync(tempPath)) {
+              const buffer = fs.readFileSync(tempPath)
+              fs.unlinkSync(tempPath) // Clean up
+              resolve({
+                format: 'png',
+                data: buffer
+              })
+            } else {
+              resolve(null)
+            }
+          } catch (error) {
+            resolve(null)
+          }
+        }
+      })
+
+      // Timeout after 10 seconds
+      setTimeout(() => {
+        osascript.kill()
+        try {
+          if (fs.existsSync(tempPath)) {
+            fs.unlinkSync(tempPath)
+          }
+        } catch (e) { /* ignore */ }
+        resolve(null)
+      }, 10000)
+    })
+  }
+
   async readImage () {
     try {
       const clipboardy = await getClipboardy()
@@ -336,6 +545,15 @@ if ($clipboard.GetDataPresent([System.Windows.Forms.DataFormats]::Bitmap)) {
         if (winType === 'image') {
           const winImage = await this.readWindowsImage()
           if (winImage) return winImage
+        }
+      }
+
+      // On macOS, if we didn't get base64 image data, try the AppleScript approach
+      if (process.platform === 'darwin') {
+        const macType = await this.checkMacClipboard()
+        if (macType === 'image') {
+          const macImage = await this.readMacImage()
+          if (macImage) return macImage
         }
       }
 
@@ -402,7 +620,14 @@ if ($clipboard.GetDataPresent([System.Windows.Forms.DataFormats]::Bitmap)) {
         throw error
       }
 
-      if (!content || content.length === 0) {
+      if (!content || content.trim().length === 0) {
+        // On macOS, if clipboardy returned empty, check if there's image content
+        if (process.platform === 'darwin') {
+          const macType = await this.checkMacClipboard()
+          if (macType === 'image') return 'image'
+          if (macType === 'text') return 'text'
+          if (macType === 'empty') return 'empty'
+        }
         return 'empty'
       }
 

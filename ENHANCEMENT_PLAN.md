@@ -36,7 +36,7 @@ This document outlines planned enhancements to make clipaste a more complete cli
 clipaste copy "text content"           # ✅ Write text to clipboard
 clipaste copy --file myfile.txt        # ✅ Copy file contents to clipboard
 echo "data" | clipaste copy             # ✅ Pipe input to clipboard
-# clipaste copy --image image.png      # 🔄 Image file copying (planned for Phase 3)
+clipaste copy --image image.png        # ✅ Image file copying (macOS complete)
 ```
 
 #### ✅ 2. Output Clipboard Content
