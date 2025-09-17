@@ -403,7 +403,7 @@ describe('Phase 1 Enhancement Tests - REAL Tests', () => {
       }
 
       expect(getResult.stdout.trim()).toBe(longText)
-    })
+    }, 10000)
 
     it('should handle special characters and unicode', async () => {
       const specialText = 'Special chars: åäö 🚀 \\n\\t "quotes" \'apostrophes\''
@@ -421,6 +421,6 @@ describe('Phase 1 Enhancement Tests - REAL Tests', () => {
       }
 
       expect(getResult.stdout.trim()).toBe(specialText)
-    })
+    }, 10000)
   })
 })

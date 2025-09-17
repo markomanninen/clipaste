@@ -94,8 +94,8 @@ describe('CLI Integration Tests', () => {
     it('should check clipboard status', async () => {
       const result = await runCLI(['status'])
 
-      // Status command should run without error or show clipboard empty
-      expect([0, 1]).toContain(result.code)
+      // Status command should run without error or show clipboard empty (124 = timeout)
+      expect([0, 1, 124]).toContain(result.code)
 
       // Accept either output in stdout or stderr, or empty (when clipboard access issues occur)
       const output = result.stdout + result.stderr

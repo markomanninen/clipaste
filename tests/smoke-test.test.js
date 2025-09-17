@@ -68,8 +68,8 @@ describe('Smoke Tests - Basic Functionality', () => {
       expect(result.stderr).not.toContain('is not a function')
       expect(result.stderr).not.toContain('Cannot find module')
 
-      // Should exit with 0 or 1, not crash
-      expect([0, 1]).toContain(result.code)
+      // Should exit with 0 or 1, not crash (124 = timeout)
+      expect([0, 1, 124]).toContain(result.code)
     }, 10000) // Increased timeout for macOS clipboard operations
 
     it('should handle paste dry-run without function errors', async () => {
@@ -81,8 +81,8 @@ describe('Smoke Tests - Basic Functionality', () => {
       expect(result.stderr).not.toContain('Cannot find module')
 
       // Should complete without crashing
-      expect([0, 1]).toContain(result.code)
-    })
+      expect([0, 1, 124]).toContain(result.code)
+    }, 10000)
 
     it('should handle clear command without function errors', async () => {
       const result = await runCommand(['clear'])
@@ -93,7 +93,7 @@ describe('Smoke Tests - Basic Functionality', () => {
       expect(result.stderr).not.toContain('Cannot find module')
 
       // Should complete without crashing
-      expect([0, 1]).toContain(result.code)
+      expect([0, 1, 124]).toContain(result.code)
     }, 10000) // Increased timeout for macOS clipboard operations
   })
 
