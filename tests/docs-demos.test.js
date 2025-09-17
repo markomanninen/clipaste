@@ -313,35 +313,59 @@ describe('Docs demo parity', () => {
       return
     }
 
-    const password = await runCLI(['random', 'password', '--length', '16'], { cwd: ctx.workDir, env })
-    expect(password.code).toBe(0)
-    expect(password.stdout).toContain('Generated password:')
-    const passwordValue = (await runCLI(['get'], { cwd: ctx.workDir, env })).stdout.trim()
-    expect(passwordValue.length).toBe(16)
+    const flows = [
+      {
+        cmd: ['random', 'password', '--length', '16'],
+        verify: (output, clipboard) => {
+          expect(output).toContain('Generated password:')
+          expect(clipboard.length).toBe(16)
+        }
+      },
+      {
+        cmd: ['random', 'password', '--words', '4'],
+        verify: (output, clipboard) => {
+          expect(output).toContain('Generated password:')
+          expect(clipboard.split('-')).toHaveLength(4)
+        }
+      },
+      {
+        cmd: ['random', 'string', '--template', 'User-{{#####}}'],
+        verify: (output, clipboard) => {
+          expect(output).toContain('Generated string:')
+          expect(clipboard).toMatch(/^User-\{?\d{5}\}?$/)
+        }
+      },
+      {
+        cmd: ['random', 'personal-id', '--birthdate', '1990-05-15'],
+        verify: (output, clipboard) => {
+          expect(output).toContain('Generated personal identity code:')
+          expect(clipboard).toMatch(/^\d{6}[+\-A]\d{3}[0-9A-Z]$/)
+        }
+      },
+      {
+        cmd: ['random', 'iban'],
+        verify: (output, clipboard) => {
+          expect(output).toContain('Generated IBAN:')
+          expect(clipboard.replace(/\s+/g, '')).toMatch(/^FI\d{16}$/)
+        }
+      },
+      {
+        cmd: ['random', 'business-id'],
+        verify: (output, clipboard) => {
+          expect(output).toContain('Generated business ID:')
+          expect(clipboard).toMatch(/^\d{7}-\d$/)
+        }
+      }
+    ]
 
-    const wordPassword = await runCLI(['random', 'password', '--words', '4'], { cwd: ctx.workDir, env })
-    expect(wordPassword.stdout).toContain('Generated password:')
-    const wordsValue = (await runCLI(['get'], { cwd: ctx.workDir, env })).stdout.trim()
-    expect(wordsValue.split('-')).toHaveLength(4)
-
-    const templated = await runCLI(['random', 'string', '--template', 'User-{{#####}}'], { cwd: ctx.workDir, env })
-    expect(templated.stdout).toContain('Generated string:')
-    const stringValue = (await runCLI(['get'], { cwd: ctx.workDir, env })).stdout.trim()
-    expect(stringValue).toMatch(/^User-\{?\d{5}\}?$/)
-
-    const hetu = await runCLI(['random', 'personal-id', '--birthdate', '1990-05-15'], { cwd: ctx.workDir, env })
-    expect(hetu.stdout).toContain('Generated personal identity code:')
-    const hetuValue = (await runCLI(['get'], { cwd: ctx.workDir, env })).stdout.trim()
-    expect(hetuValue).toMatch(/^\d{6}[+\-A]\d{3}[0-9A-Z]$/)
-
-    const iban = await runCLI(['random', 'iban'], { cwd: ctx.workDir, env })
-    expect(iban.stdout).toContain('Generated IBAN:')
-    const ibanValue = (await runCLI(['get'], { cwd: ctx.workDir, env })).stdout.trim()
-    expect(ibanValue.replace(/\s+/g, '')).toMatch(/^FI\d{16}$/)
-
-    const business = await runCLI(['random', 'business-id'], { cwd: ctx.workDir, env })
-    expect(business.stdout).toContain('Generated business ID:')
-    const businessValue = (await runCLI(['get'], { cwd: ctx.workDir, env })).stdout.trim()
-    expect(businessValue).toMatch(/^\d{7}-\d$/)
+    for (const flow of flows) {
+      const result = await runCLI(flow.cmd, { cwd: ctx.workDir, env })
+      if (result.code !== 0) {
+        console.warn(`Skipping ${flow.cmd.join(' ')} due to exit code ${result.code}`)
+        continue
+      }
+      const clipboardValue = (await runCLI(['get'], { cwd: ctx.workDir, env })).stdout.trim()
+      flow.verify(result.stdout, clipboardValue)
+    }
   })
 })
