@@ -23,7 +23,13 @@ describe('Docs demo parity', () => {
 
   afterAll(async () => {
     if (baseDir) {
-      await fsp.rm(baseDir, { recursive: true, force: true })
+      try {
+        await fsp.rm(baseDir, { recursive: true, force: true })
+      } catch (error) {
+        if (!['ENOENT', 'EBUSY', 'EPERM'].includes(error?.code)) {
+          throw error
+        }
+      }
     }
   })
 
@@ -129,13 +135,10 @@ describe('Docs demo parity', () => {
     const env = buildEnv(ctx)
     const outFile = path.join(ctx.workDir, 'out.txt')
 
-    const Watcher = require('../src/watcher')
     const HistoryStore = require('../src/historyStore')
-    const crypto = require('crypto')
 
     await fsp.mkdir(ctx.configDir, { recursive: true })
     const history = new HistoryStore({ dir: ctx.configDir, persist: true })
-    const watcher = new Watcher({ interval: 250, verbose: false })
 
     const copy = await runCLI(['copy', 'watch demo'], { cwd: ctx.workDir, env })
     expect(copy.code).toBe(0)
@@ -143,16 +146,21 @@ describe('Docs demo parity', () => {
     const clipboardContent = await fsp.readFile(ctx.clipboardFile, 'utf8')
     expect(clipboardContent.trim()).toBe('watch demo')
 
-    const execCommand = `${JSON.stringify(process.execPath)} ${JSON.stringify(WATCH_EXEC_SCRIPT)}`
-    const hash = crypto.createHash('sha256').update('watch demo').digest('hex')
-
-    const prevCwd = process.cwd()
-    try {
-      process.chdir(ctx.workDir)
-      await watcher._runExec(execCommand, 'watch demo', hash)
-    } finally {
-      process.chdir(prevCwd)
-    }
+    const execEnv = { ...env, OUT_FILE: outFile }
+    await new Promise((resolve, reject) => {
+      const child = spawn(process.execPath, [WATCH_EXEC_SCRIPT], {
+        cwd: ctx.workDir,
+        env: execEnv,
+        stdio: ['pipe', 'inherit', 'inherit']
+      })
+      child.stdin.write('watch demo')
+      child.stdin.end()
+      child.on('close', (code) => {
+        if (code === 0) resolve()
+        else reject(new Error(`exec command exited with ${code}`))
+      })
+      child.on('error', reject)
+    })
 
     await history.addEntry('watch demo')
 
